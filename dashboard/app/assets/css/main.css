@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+:root {
+  /* Surfaces */
+  --chat-bg-primary: #fafafa;
+  --chat-bg-secondary: #ffffff;
+  --chat-bg-tertiary: #f3f4f6;
+
+  /* Accent */
+  --chat-accent: #2563eb;
+  --chat-accent-soft: #dbeafe;
+
+  /* Text */
+  --chat-text-primary: #111827;
+  --chat-text-secondary: #6b7280;
+  --chat-text-inverse: #ffffff;
+
+  /* Bubbles */
+  --chat-bubble-sent: var(--chat-accent);
+  --chat-bubble-received: var(--chat-bg-tertiary);
+
+  /* Shadows */
+  --chat-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --chat-shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --chat-shadow-float: 0 8px 30px rgba(0,0,0,0.08);
+
+  /* Typography */
+  --chat-font-display: 'Satoshi', system-ui, sans-serif;
+  --chat-font-body: 'Inter', system-ui, sans-serif;
+
+  /* Borders */
+  --chat-radius-sm: 8px;
+  --chat-radius-md: 12px;
+  --chat-radius-lg: 20px;
+  --chat-radius-bubble: 18px;
+}
+
+[data-theme="dark"] {
+  --chat-bg-primary: #0f0f0f;
+  --chat-bg-secondary: #1a1a1a;
+  --chat-bg-tertiary: #262626;
+  --chat-text-primary: #fafafa;
+  --chat-text-secondary: #a1a1aa;
+  --chat-bubble-received: #262626;
+}
