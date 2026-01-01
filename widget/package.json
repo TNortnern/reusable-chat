@@ -1,0 +1,14 @@
+{
+  "name": "chat-widget",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "devDependencies": {
+    "terser": "^5.37.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.3.5"
+  }
+}
