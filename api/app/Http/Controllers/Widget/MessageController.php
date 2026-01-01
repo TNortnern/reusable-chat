@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Widget;
 
+use App\Events\MessageCreated;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -47,8 +48,9 @@ class MessageController extends Controller
         // Update conversation last_message_at
         $conversation->update(['last_message_at' => now()]);
 
-        // TODO: Broadcast MessageCreated event
+        $message->load(['sender', 'attachments']);
+        broadcast(new MessageCreated($message))->toOthers();
 
-        return response()->json($message->load(['sender', 'attachments']), 201);
+        return response()->json($message, 201);
     }
 }

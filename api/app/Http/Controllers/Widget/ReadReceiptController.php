@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Widget;
 
+use App\Events\MessagesRead;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Participant;
@@ -20,12 +21,13 @@ class ReadReceiptController extends Controller
             ->whereHas('participants', fn($q) => $q->where('chat_user_id', $user->id))
             ->firstOrFail();
 
+        $readAt = now();
         Participant::where('conversation_id', $conversation->id)
             ->where('chat_user_id', $user->id)
-            ->update(['last_read_at' => now()]);
+            ->update(['last_read_at' => $readAt]);
 
-        // TODO: Broadcast MessagesRead event
+        broadcast(new MessagesRead($conversationId, $user->id, $readAt))->toOthers();
 
-        return response()->json(['read_at' => now()]);
+        return response()->json(['read_at' => $readAt]);
     }
 }

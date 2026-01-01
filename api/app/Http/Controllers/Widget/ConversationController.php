@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Widget;
 
+use App\Events\ConversationCreated;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Participant;
@@ -82,6 +83,15 @@ class ConversationController extends Controller
                 'conversation_id' => $conversation->id,
                 'chat_user_id' => $userId,
             ]);
+        }
+
+        $conversation->load('participants');
+
+        // Notify all other participants about the new conversation
+        foreach ($participantIds as $participantId) {
+            if ($participantId !== $currentUser->id) {
+                broadcast(new ConversationCreated($conversation, $participantId));
+            }
         }
 
         return response()->json($conversation->load('participants.chatUser'), 201);

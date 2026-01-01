@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Widget;
 
+use App\Events\ReactionAdded;
+use App\Events\ReactionRemoved;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -36,7 +38,7 @@ class ReactionController extends Controller
             'emoji' => $validated['emoji'],
         ]);
 
-        // TODO: Broadcast ReactionAdded event
+        broadcast(new ReactionAdded($reaction, $conversationId))->toOthers();
 
         return response()->json($reaction, 201);
     }
@@ -64,7 +66,7 @@ class ReactionController extends Controller
             return response()->json(['error' => 'Reaction not found'], 404);
         }
 
-        // TODO: Broadcast ReactionRemoved event
+        broadcast(new ReactionRemoved($messageId, $conversationId, $user->id, $emoji))->toOthers();
 
         return response()->json(null, 204);
     }
