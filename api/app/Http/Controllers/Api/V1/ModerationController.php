@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Ban;
 use App\Models\ChatUser;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ModerationController extends Controller
 {
-    public function ban(Request $request, string $id)
+    public function ban(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'reason' => 'nullable|string|max:500',
@@ -45,7 +46,7 @@ class ModerationController extends Controller
         return response()->json($ban, 201);
     }
 
-    public function unban(Request $request, string $id)
+    public function unban(Request $request, string $id): JsonResponse
     {
         $workspace = $request->workspace;
 
@@ -64,7 +65,7 @@ class ModerationController extends Controller
         return response()->json(null, 204);
     }
 
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $workspace = $request->workspace;
 

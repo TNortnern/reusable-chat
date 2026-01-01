@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChatUser;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'external_id' => 'required|string|max:255',
@@ -38,7 +39,7 @@ class UserController extends Controller
         return response()->json($user, $user->wasRecentlyCreated ? 201 : 200);
     }
 
-    public function show(Request $request, string $externalId)
+    public function show(Request $request, string $externalId): JsonResponse
     {
         $user = ChatUser::where('workspace_id', $request->workspace->id)
             ->where('external_id', $externalId)

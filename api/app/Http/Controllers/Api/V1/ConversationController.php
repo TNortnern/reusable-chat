@@ -6,11 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\ChatUser;
 use App\Models\Participant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ConversationController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'user_id' => 'required|uuid',
@@ -34,7 +35,7 @@ class ConversationController extends Controller
         return response()->json($conversations);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'type' => 'required|in:direct,group',
@@ -87,7 +88,7 @@ class ConversationController extends Controller
         return response()->json($conversation->load('participants.chatUser'), 201);
     }
 
-    public function addParticipant(Request $request, string $id)
+    public function addParticipant(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'user_id' => 'required|uuid',
