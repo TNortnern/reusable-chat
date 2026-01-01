@@ -17,7 +17,9 @@ class BroadcastAuthController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Authorize the channel subscription
+        // Set the user resolver so Broadcast::auth() can find the user
+        $request->setUserResolver(fn() => $user);
+
         return Broadcast::auth($request);
     }
 }
