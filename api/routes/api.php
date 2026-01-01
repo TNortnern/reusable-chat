@@ -13,6 +13,7 @@ use App\Http\Controllers\Widget\ReadReceiptController;
 use App\Http\Controllers\Widget\TypingController;
 use App\Http\Controllers\Widget\AttachmentController;
 use App\Http\Controllers\Widget\BlockController;
+use App\Http\Controllers\Widget\BroadcastAuthController;
 use App\Http\Controllers\Dashboard\AuthController;
 use App\Http\Controllers\Dashboard\WorkspaceController;
 use App\Http\Controllers\Dashboard\SettingsController;
@@ -46,6 +47,9 @@ Route::prefix('v1')->middleware('api.key')->group(function () {
 // Widget API - Session Token Auth
 Route::prefix('widget')->middleware('session.token')->group(function () {
     Route::get('/me', [MeController::class, 'show']);
+
+    // Broadcasting auth for Reverb
+    Route::post('/broadcasting/auth', [BroadcastAuthController::class, 'authenticate']);
 
     Route::get('/conversations', [WidgetConversationController::class, 'index']);
     Route::post('/conversations', [WidgetConversationController::class, 'store']);
