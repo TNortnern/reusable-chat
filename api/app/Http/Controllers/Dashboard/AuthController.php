@@ -19,7 +19,13 @@ class AuthController extends Controller
 
         $admin = Admin::where('email', $validated['email'])->first();
 
-        if (!$admin || !Hash::check($validated['password'], $admin->password)) {
+        // Prevent timing attacks - always check password
+        if (!$admin) {
+            Hash::check($validated['password'], '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+            return response()->json(['error' => 'Invalid credentials'], 401);
+        }
+
+        if (!Hash::check($validated['password'], $admin->password)) {
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 

@@ -9,6 +9,7 @@ use App\Models\WorkspaceSettings;
 use App\Models\WorkspaceTheme;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class WorkspaceController extends Controller
@@ -29,22 +30,24 @@ class WorkspaceController extends Controller
             'slug' => 'nullable|string|max:100|unique:workspaces,slug',
         ]);
 
-        $workspace = Workspace::create([
-            'name' => $validated['name'],
-            'slug' => $validated['slug'] ?? Str::slug($validated['name']),
-            'owner_id' => $request->user()->id,
-        ]);
+        $workspace = DB::transaction(function () use ($validated, $request) {
+            $workspace = Workspace::create([
+                'name' => $validated['name'],
+                'slug' => $validated['slug'] ?? Str::slug($validated['name']),
+                'owner_id' => $request->user()->id,
+            ]);
 
-        // Create default settings and theme
-        WorkspaceSettings::create(['workspace_id' => $workspace->id]);
-        WorkspaceTheme::create(['workspace_id' => $workspace->id]);
+            WorkspaceSettings::create(['workspace_id' => $workspace->id]);
+            WorkspaceTheme::create(['workspace_id' => $workspace->id]);
 
-        // Add owner as member
-        WorkspaceMember::create([
-            'workspace_id' => $workspace->id,
-            'admin_id' => $request->user()->id,
-            'role' => 'owner',
-        ]);
+            WorkspaceMember::create([
+                'workspace_id' => $workspace->id,
+                'admin_id' => $request->user()->id,
+                'role' => 'owner',
+            ]);
+
+            return $workspace;
+        });
 
         return response()->json($workspace->load('settings', 'theme'), 201);
     }

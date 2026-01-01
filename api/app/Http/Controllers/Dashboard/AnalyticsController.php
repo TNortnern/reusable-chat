@@ -30,7 +30,11 @@ class AnalyticsController extends Controller
     public function messages(Request $request, string $id): JsonResponse
     {
         $workspace = $this->getWorkspace($request, $id);
-        $days = $request->input('days', 7);
+
+        $validated = $request->validate([
+            'days' => 'nullable|integer|min:1|max:365',
+        ]);
+        $days = $validated['days'] ?? 7;
 
         $stats = Message::whereHas('conversation', fn($q) =>
                 $q->where('workspace_id', $workspace->id))
@@ -46,7 +50,11 @@ class AnalyticsController extends Controller
     public function users(Request $request, string $id): JsonResponse
     {
         $workspace = $this->getWorkspace($request, $id);
-        $days = $request->input('days', 7);
+
+        $validated = $request->validate([
+            'days' => 'nullable|integer|min:1|max:365',
+        ]);
+        $days = $validated['days'] ?? 7;
 
         $stats = ChatUser::where('workspace_id', $workspace->id)
             ->where('created_at', '>=', now()->subDays($days))

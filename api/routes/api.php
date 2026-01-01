@@ -67,7 +67,8 @@ Route::prefix('widget')->middleware('session.token')->group(function () {
 // Dashboard API - Sanctum Auth
 Route::prefix('dashboard')->group(function () {
     // Auth (public)
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1'); // 5 attempts per minute
 
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {

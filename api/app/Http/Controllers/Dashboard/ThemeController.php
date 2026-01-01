@@ -21,8 +21,8 @@ class ThemeController extends Controller
 
         $validated = $request->validate([
             'preset' => 'nullable|in:minimal,playful,professional,custom',
-            'primary_color' => 'nullable|string|max:7',
-            'background_color' => 'nullable|string|max:7',
+            'primary_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'background_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'font_family' => 'nullable|string|max:100',
             'logo_url' => 'nullable|url|max:500',
             'position' => 'nullable|in:bottom-right,bottom-left',
