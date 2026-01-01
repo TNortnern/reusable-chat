@@ -39,6 +39,7 @@ const navItems = [
   { to: '/dashboard/conversations', icon: 'i-heroicons-chat-bubble-left-right', label: 'Conversations' },
   { to: '/dashboard/users', icon: 'i-heroicons-users', label: 'Users' },
   { to: '/dashboard/analytics', icon: 'i-heroicons-chart-bar', label: 'Analytics' },
+  { to: '/dashboard/widget', icon: 'i-heroicons-code-bracket', label: 'Widget' },
   { to: '/dashboard/settings', icon: 'i-heroicons-cog-6-tooth', label: 'Settings' },
   { to: '/dashboard/theme', icon: 'i-heroicons-swatch', label: 'Theme' },
 ]
