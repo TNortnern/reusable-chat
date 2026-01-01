@@ -13,6 +13,14 @@ use App\Http\Controllers\Widget\ReadReceiptController;
 use App\Http\Controllers\Widget\TypingController;
 use App\Http\Controllers\Widget\AttachmentController;
 use App\Http\Controllers\Widget\BlockController;
+use App\Http\Controllers\Dashboard\AuthController;
+use App\Http\Controllers\Dashboard\WorkspaceController;
+use App\Http\Controllers\Dashboard\SettingsController;
+use App\Http\Controllers\Dashboard\ThemeController;
+use App\Http\Controllers\Dashboard\ApiKeyController;
+use App\Http\Controllers\Dashboard\ConversationController as DashboardConversationController;
+use App\Http\Controllers\Dashboard\UserController as DashboardUserController;
+use App\Http\Controllers\Dashboard\AnalyticsController;
 
 // Consumer Backend API (v1) - API Key Auth
 Route::prefix('v1')->middleware('api.key')->group(function () {
@@ -54,4 +62,48 @@ Route::prefix('widget')->middleware('session.token')->group(function () {
 
     Route::post('/users/{id}/block', [BlockController::class, 'store']);
     Route::delete('/users/{id}/block', [BlockController::class, 'destroy']);
+});
+
+// Dashboard API - Sanctum Auth
+Route::prefix('dashboard')->group(function () {
+    // Auth (public)
+    Route::post('/auth/login', [AuthController::class, 'login']);
+
+    // Protected routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::get('/auth/me', [AuthController::class, 'me']);
+
+        // Workspaces
+        Route::get('/workspaces', [WorkspaceController::class, 'index']);
+        Route::post('/workspaces', [WorkspaceController::class, 'store']);
+        Route::get('/workspaces/{id}', [WorkspaceController::class, 'show']);
+        Route::patch('/workspaces/{id}', [WorkspaceController::class, 'update']);
+
+        // Settings & Theme
+        Route::get('/workspaces/{id}/settings', [SettingsController::class, 'show']);
+        Route::patch('/workspaces/{id}/settings', [SettingsController::class, 'update']);
+        Route::get('/workspaces/{id}/theme', [ThemeController::class, 'show']);
+        Route::patch('/workspaces/{id}/theme', [ThemeController::class, 'update']);
+
+        // API Keys
+        Route::get('/workspaces/{id}/api-keys', [ApiKeyController::class, 'index']);
+        Route::post('/workspaces/{id}/api-keys', [ApiKeyController::class, 'store']);
+        Route::delete('/workspaces/{id}/api-keys/{keyId}', [ApiKeyController::class, 'destroy']);
+
+        // Conversations & Messages
+        Route::get('/workspaces/{id}/conversations', [DashboardConversationController::class, 'index']);
+        Route::get('/workspaces/{id}/conversations/{convId}', [DashboardConversationController::class, 'show']);
+        Route::delete('/workspaces/{id}/messages/{msgId}', [DashboardConversationController::class, 'destroyMessage']);
+
+        // Users & Moderation
+        Route::get('/workspaces/{id}/users', [DashboardUserController::class, 'index']);
+        Route::post('/workspaces/{id}/users/{userId}/ban', [DashboardUserController::class, 'ban']);
+        Route::delete('/workspaces/{id}/users/{userId}/ban', [DashboardUserController::class, 'unban']);
+
+        // Analytics
+        Route::get('/workspaces/{id}/analytics', [AnalyticsController::class, 'overview']);
+        Route::get('/workspaces/{id}/analytics/messages', [AnalyticsController::class, 'messages']);
+        Route::get('/workspaces/{id}/analytics/users', [AnalyticsController::class, 'users']);
+    });
 });
