@@ -48,6 +48,16 @@ class ConversationController extends Controller
             [$currentUser->id]
         ));
 
+        // Validate all participants exist in workspace
+        $validUsers = \App\Models\ChatUser::where('workspace_id', $workspace->id)
+            ->whereIn('id', $participantIds)
+            ->pluck('id')
+            ->toArray();
+
+        if (count($validUsers) !== count($participantIds)) {
+            return response()->json(['error' => 'Invalid participant IDs'], 422);
+        }
+
         // For direct chats, check if exists
         if ($validated['type'] === 'direct' && count($participantIds) === 2) {
             $existing = Conversation::where('workspace_id', $workspace->id)

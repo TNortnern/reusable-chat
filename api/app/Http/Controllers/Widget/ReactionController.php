@@ -14,7 +14,7 @@ class ReactionController extends Controller
     public function store(Request $request, string $conversationId, string $messageId): JsonResponse
     {
         $validated = $request->validate([
-            'emoji' => 'required|string|max:10',
+            'emoji' => 'required|string|max:8',
         ]);
 
         $user = $request->chatUser;

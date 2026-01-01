@@ -14,7 +14,7 @@ class AttachmentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'file' => 'required|file|max:10240', // 10MB max
+            'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,txt',
         ]);
 
         $user = $request->chatUser;
@@ -23,7 +23,6 @@ class AttachmentController extends Controller
         $file = $validated['file'];
         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
 
-        // Store file (configure disk for Bunny CDN in production)
         $path = $file->storeAs(
             "workspaces/{$workspace->id}/attachments",
             $filename,
@@ -31,11 +30,9 @@ class AttachmentController extends Controller
         );
 
         $attachment = Attachment::create([
-            'workspace_id' => $workspace->id,
-            'uploaded_by' => $user->id,
             'filename' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
-            'size' => $file->getSize(),
+            'size_bytes' => $file->getSize(),
             'url' => Storage::disk('public')->url($path),
         ]);
 

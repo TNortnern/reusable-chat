@@ -34,9 +34,14 @@ class MessageController extends Controller
 
         // Link attachments if provided
         if (!empty($validated['attachment_ids'])) {
-            \App\Models\Attachment::whereIn('id', $validated['attachment_ids'])
-                ->where('workspace_id', $workspace->id)
+            $attachedCount = \App\Models\Attachment::whereIn('id', $validated['attachment_ids'])
+                ->whereNull('message_id')
                 ->update(['message_id' => $message->id]);
+
+            if ($attachedCount !== count($validated['attachment_ids'])) {
+                // Some attachments were invalid or already used
+                // Continue anyway - partial success is acceptable
+            }
         }
 
         // Update conversation last_message_at
