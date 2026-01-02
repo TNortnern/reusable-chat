@@ -125,12 +125,18 @@ Route::get('/health', function () {
         'status' => 'ok',
         'timestamp' => now()->toISOString(),
         'services' => [],
+        'env' => [
+            'CACHE_STORE' => env('CACHE_STORE', 'not set'),
+            'QUEUE_CONNECTION' => env('QUEUE_CONNECTION', 'not set'),
+            'SESSION_DRIVER' => env('SESSION_DRIVER', 'not set'),
+            'REDIS_URL' => env('REDIS_URL') ? 'configured' : 'not set',
+            'BUNNY_STORAGE_ENABLED' => env('BUNNY_STORAGE_ENABLED', false) ? 'true' : 'false',
+        ],
     ];
 
     // Check Redis connectivity
     try {
         $redisClient = env('REDIS_CLIENT', 'phpredis');
-        $redisUrl = env('REDIS_URL') ? 'configured' : 'not configured';
 
         // Test Redis connection
         Redis::set('health_check', 'ok');
@@ -140,12 +146,12 @@ Route::get('/health', function () {
         $results['services']['redis'] = [
             'status' => $redisValue === 'ok' ? 'connected' : 'error',
             'client' => $redisClient,
-            'url' => $redisUrl,
         ];
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         $results['services']['redis'] = [
             'status' => 'error',
             'error' => $e->getMessage(),
+            'class' => get_class($e),
         ];
     }
 
@@ -160,7 +166,7 @@ Route::get('/health', function () {
             'status' => $cacheValue === 'ok' ? 'connected' : 'error',
             'driver' => $cacheDriver,
         ];
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         $results['services']['cache'] = [
             'status' => 'error',
             'driver' => config('cache.default'),
@@ -197,10 +203,10 @@ Route::get('/health', function () {
         } else {
             $results['services']['bunny'] = [
                 'status' => 'disabled',
-                'message' => 'BUNNY_STORAGE_ENABLED is not set to true',
+                'message' => 'BUNNY_STORAGE_ENABLED is not set',
             ];
         }
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         $results['services']['bunny'] = [
             'status' => 'error',
             'error' => $e->getMessage(),
