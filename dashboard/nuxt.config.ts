@@ -13,6 +13,7 @@ export default defineNuxtConfig({
       reverbHost: process.env.NUXT_PUBLIC_REVERB_HOST || 'localhost',
       reverbPort: process.env.NUXT_PUBLIC_REVERB_PORT || '8080',
       reverbKey: process.env.NUXT_PUBLIC_REVERB_KEY || 'chat-app-key',
+      demoApiKey: process.env.NUXT_PUBLIC_DEMO_API_KEY || '',
     }
   },
 

@@ -120,8 +120,8 @@ const route = useRoute()
 const router = useRouter()
 const { $echo } = useNuxtApp()
 
-// Demo configuration - using the test workspace API key
-const API_KEY = 'REDACTED_DEMO_KEY'
+// Demo configuration - API key from environment
+const API_KEY = config.public.demoApiKey as string
 
 interface Message {
   id: string
