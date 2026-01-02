@@ -5,12 +5,14 @@ namespace Database\Seeders;
 use App\Models\Workspace;
 use App\Models\ApiKey;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class DemoSeeder extends Seeder
 {
     public function run(): void
     {
+        // The actual API key that clients will use
+        $demoApiKey = 'sk_demo_reusable_chat_demo_key_2026';
+
         // Create demo workspace
         $workspace = Workspace::firstOrCreate(
             ['slug' => 'demo'],
@@ -20,17 +22,20 @@ class DemoSeeder extends Seeder
             ]
         );
 
-        // Create demo API key
+        // Create demo API key (hashed for security)
+        $keyHash = hash('sha256', $demoApiKey);
+
         ApiKey::firstOrCreate(
-            ['key' => 'sk_demo_' . Str::random(32)],
+            ['key_hash' => $keyHash],
             [
                 'workspace_id' => $workspace->id,
                 'name' => 'Demo API Key',
-                'key' => 'sk_demo_reusable_chat_demo_key_2026',
+                'key_hash' => $keyHash,
+                'key_prefix' => substr($demoApiKey, 0, 12) . '...',
             ]
         );
 
         $this->command->info('Demo workspace and API key created!');
-        $this->command->info('API Key: sk_demo_reusable_chat_demo_key_2026');
+        $this->command->info('API Key: ' . $demoApiKey);
     }
 }
