@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use League\Flysystem\Filesystem;
@@ -35,9 +36,11 @@ class BunnyServiceProvider extends ServiceProvider
             // Create the adapter with the client and CDN URL
             $adapter = new BunnyCDNAdapter($client, $config['cdn_url'] ?? '');
 
-            return new Filesystem($adapter, [
-                'url' => $config['cdn_url'] . '/' . ($config['path'] ?? ''),
-            ]);
+            // Create the Flysystem filesystem
+            $filesystem = new Filesystem($adapter, $config);
+
+            // Wrap in Laravel's FilesystemAdapter for proper Storage facade integration
+            return new FilesystemAdapter($filesystem, $adapter, $config);
         });
     }
 }
