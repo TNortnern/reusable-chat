@@ -140,6 +140,7 @@ Route::get('/health', function () {
             'SESSION_DRIVER' => env('SESSION_DRIVER', 'not set'),
             'REDIS_URL' => env('REDIS_URL') ? 'configured' : 'not set',
             'BUNNY_STORAGE_ENABLED' => env('BUNNY_STORAGE_ENABLED', false) ? 'true' : 'false',
+            'RAILWAY_BUCKET' => env('BUCKET') ? 'configured' : 'not set',
         ],
     ];
 
@@ -217,6 +218,40 @@ Route::get('/health', function () {
         }
     } catch (\Throwable $e) {
         $results['services']['bunny'] = [
+            'status' => 'error',
+            'error' => $e->getMessage(),
+        ];
+    }
+
+    // Check Railway bucket storage
+    try {
+        $bucketEnabled = env('BUCKET');
+        if ($bucketEnabled) {
+            $disk = Storage::disk('railway');
+
+            // Try to write a test file
+            $testPath = 'health-check-' . time() . '.txt';
+            $disk->put($testPath, 'health check');
+
+            // Verify it exists
+            $exists = $disk->exists($testPath);
+
+            // Clean up
+            $disk->delete($testPath);
+
+            $results['services']['railway_bucket'] = [
+                'status' => $exists ? 'connected' : 'error',
+                'bucket' => env('BUCKET'),
+                'endpoint' => env('ENDPOINT'),
+            ];
+        } else {
+            $results['services']['railway_bucket'] = [
+                'status' => 'disabled',
+                'message' => 'BUCKET env var not set',
+            ];
+        }
+    } catch (\Throwable $e) {
+        $results['services']['railway_bucket'] = [
             'status' => 'error',
             'error' => $e->getMessage(),
         ];

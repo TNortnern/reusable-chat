@@ -60,6 +60,19 @@ return [
             'report' => false,
         ],
 
+        // Railway S3-compatible bucket storage
+        'railway' => [
+            'driver' => 's3',
+            'key' => env('ACCESS_KEY_ID'),
+            'secret' => env('SECRET_ACCESS_KEY'),
+            'region' => env('REGION', 'auto'),
+            'bucket' => env('BUCKET'),
+            'endpoint' => env('ENDPOINT', 'https://storage.railway.app'),
+            'use_path_style_endpoint' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'bunny' => [
             'driver' => 'bunny',
             'storage_zone' => env('BUNNY_STORAGE_ZONE'),

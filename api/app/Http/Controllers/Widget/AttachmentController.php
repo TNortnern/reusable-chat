@@ -30,8 +30,14 @@ class AttachmentController extends Controller
         $extension = $file->getClientOriginalExtension() ?: 'bin';
         $filename = Str::uuid() . '.' . $extension;
 
-        // Use Bunny CDN if enabled, otherwise local public disk
-        $disk = env('BUNNY_STORAGE_ENABLED') ? 'bunny' : 'public';
+        // Determine storage disk: Railway bucket > Bunny CDN > local public
+        if (env('BUCKET')) {
+            $disk = 'railway';
+        } elseif (env('BUNNY_STORAGE_ENABLED')) {
+            $disk = 'bunny';
+        } else {
+            $disk = 'public';
+        }
         $storagePath = "workspaces/{$workspace->id}/attachments";
 
         // Use putFileAs for proper file handling with streams
