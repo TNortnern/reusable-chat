@@ -97,7 +97,7 @@ class ValidateMessageContent
     /**
      * Check for duplicate/repeated messages from the same user.
      */
-    protected function checkDuplicateMessage(int $userId, string $content): bool|string
+    protected function checkDuplicateMessage(string $userId, string $content): bool|string
     {
         $cacheKey = "user:{$userId}:recent_messages";
         $recentMessages = Cache::get($cacheKey, []);
@@ -120,7 +120,7 @@ class ValidateMessageContent
     /**
      * Store a message hash for duplicate detection.
      */
-    protected function storeMessageHash(int $userId, string $content): void
+    protected function storeMessageHash(string $userId, string $content): void
     {
         $cacheKey = "user:{$userId}:recent_messages";
         $recentMessages = Cache::get($cacheKey, []);
