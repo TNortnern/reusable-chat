@@ -419,7 +419,8 @@ const joinConversation = async () => {
         content: m.content,
         sender_id: m.sender?.id || m.sender_id,
         sender_name: m.sender?.name || 'Unknown',
-        created_at: m.created_at
+        created_at: m.created_at,
+        attachments: m.attachments || []
       })).reverse() // Reverse to show oldest first
       scrollToBottom()
     } else {
