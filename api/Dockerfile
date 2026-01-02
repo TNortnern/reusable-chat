@@ -46,8 +46,12 @@ COPY api/docker/nginx.conf /etc/nginx/sites-enabled/default
 # Configure supervisord
 COPY api/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Copy startup script
+COPY api/docker/start.sh /start.sh
+RUN chmod +x /start.sh
+
 # Expose single port (nginx proxies WebSocket to Reverb internally)
 EXPOSE 8000
 
-# Start supervisord (runs nginx, php-fpm, queue worker, and reverb)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Run startup script (migrations + supervisord)
+CMD ["/start.sh"]
