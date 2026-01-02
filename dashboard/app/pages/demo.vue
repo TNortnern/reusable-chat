@@ -359,13 +359,17 @@ const connectEcho = () => {
   import('laravel-echo').then(({ default: Echo }) => {
     import('pusher-js').then(({ default: Pusher }) => {
       // Create a fresh Echo instance with auth configured
+      const reverbHost = config.public.reverbHost as string || 'localhost'
+      const reverbPort = parseInt(config.public.reverbPort as string) || 8080
+      const isProduction = reverbHost !== 'localhost'
+
       const echoWithAuth = new Echo({
         broadcaster: 'reverb',
-        key: 'chat-app-key',
-        wsHost: 'localhost',
-        wsPort: 8080,
-        wssPort: 8080,
-        forceTLS: false,
+        key: config.public.reverbKey as string || 'chat-app-key',
+        wsHost: reverbHost,
+        wsPort: isProduction ? 443 : reverbPort,
+        wssPort: isProduction ? 443 : reverbPort,
+        forceTLS: isProduction,
         enabledTransports: ['ws', 'wss'],
         disableStats: true,
         authEndpoint: `${apiUrl}/api/widget/broadcasting/auth`,
