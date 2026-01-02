@@ -315,7 +315,7 @@ const fontOptions = [
 // Embed Code
 const embedCode = computed(() => {
   const workspaceId = currentWorkspace.value?.id || 'YOUR_WORKSPACE_ID'
-  return `<script src="https://cdn.chatplatform.com/widget.js" data-workspace="${workspaceId}"></script>`
+  return `<script src="https://cdn.chatplatform.com/widget.js" data-workspace="${workspaceId}"><\/script>`
 })
 
 // Copy to clipboard

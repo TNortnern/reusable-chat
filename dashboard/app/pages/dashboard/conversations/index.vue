@@ -38,15 +38,15 @@
     <!-- Conversations Table -->
     <UCard>
       <UTable
-        :rows="filteredConversations"
+        :data="filteredConversations"
         :columns="columns"
         :loading="loading"
       >
-        <template #name-data="{ row }">
+        <template #name-cell="{ row }">
           <div class="flex items-center gap-3">
             <div class="flex -space-x-2">
               <UAvatar
-                v-for="participant in row.participants.slice(0, 2)"
+                v-for="participant in row.original.participants.slice(0, 2)"
                 :key="participant.id"
                 :alt="participant.chatUser.name"
                 size="sm"
@@ -54,55 +54,55 @@
             </div>
             <div>
               <div class="font-medium text-[var(--chat-text-primary)]">
-                {{ row.name || 'Unnamed Conversation' }}
+                {{ row.original.name || 'Unnamed Conversation' }}
               </div>
               <div class="text-xs text-[var(--chat-text-secondary)]">
-                {{ row.participants.length }} participant{{ row.participants.length !== 1 ? 's' : '' }}
+                {{ row.original.participants.length }} participant{{ row.original.participants.length !== 1 ? 's' : '' }}
               </div>
             </div>
           </div>
         </template>
 
-        <template #type-data="{ row }">
-          <UBadge :color="row.type === 'direct' ? 'blue' : 'purple'" variant="soft">
-            {{ row.type }}
+        <template #type-cell="{ row }">
+          <UBadge :color="row.original.type === 'direct' ? 'blue' : 'purple'" variant="soft">
+            {{ row.original.type }}
           </UBadge>
         </template>
 
-        <template #last_message-data="{ row }">
+        <template #last_message-cell="{ row }">
           <div class="max-w-md">
             <div class="text-sm text-[var(--chat-text-primary)] truncate">
-              {{ row.last_message?.content || 'No messages yet' }}
+              {{ row.original.last_message?.content || 'No messages yet' }}
             </div>
             <div class="text-xs text-[var(--chat-text-secondary)] mt-1">
-              {{ row.last_message?.sender.name }} • {{ formatDate(row.last_message_at) }}
+              {{ row.original.last_message?.sender.name }} • {{ formatDate(row.original.last_message_at) }}
             </div>
           </div>
         </template>
 
-        <template #status-data="{ row }">
+        <template #status-cell="{ row }">
           <UBadge
-            :color="getStatusColor(row)"
+            :color="getStatusColor(row.original)"
             variant="soft"
           >
-            {{ getStatus(row) }}
+            {{ getStatus(row.original) }}
           </UBadge>
         </template>
 
-        <template #actions-data="{ row }">
+        <template #actions-cell="{ row }">
           <div class="flex items-center gap-2">
             <UButton
               icon="i-heroicons-eye"
               size="xs"
               variant="ghost"
-              @click="navigateTo(`/dashboard/conversations/${row.id}`)"
+              @click="navigateTo(`/dashboard/conversations/${row.original.id}`)"
             />
             <UButton
               icon="i-heroicons-trash"
               size="xs"
               variant="ghost"
               color="red"
-              @click="confirmDelete(row)"
+              @click="confirmDelete(row.original)"
             />
           </div>
         </template>
@@ -163,11 +163,11 @@ const statusOptions = [
 ]
 
 const columns = [
-  { key: 'name', label: 'Conversation' },
-  { key: 'type', label: 'Type' },
-  { key: 'last_message', label: 'Last Message' },
-  { key: 'status', label: 'Status' },
-  { key: 'actions', label: 'Actions' }
+  { accessorKey: 'name', header: 'Conversation', id: 'name' },
+  { accessorKey: 'type', header: 'Type', id: 'type' },
+  { accessorKey: 'last_message', header: 'Last Message', id: 'last_message' },
+  { accessorKey: 'status', header: 'Status', id: 'status' },
+  { accessorKey: 'actions', header: 'Actions', id: 'actions' }
 ]
 
 // Mock conversations data
