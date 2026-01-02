@@ -12,6 +12,7 @@ export default defineNuxtConfig({
       apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:8000',
       reverbHost: process.env.NUXT_PUBLIC_REVERB_HOST || 'localhost',
       reverbPort: process.env.NUXT_PUBLIC_REVERB_PORT || '8080',
+      reverbKey: process.env.NUXT_PUBLIC_REVERB_KEY || 'chat-app-key',
     }
   },
 
