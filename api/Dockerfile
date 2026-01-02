@@ -40,6 +40,9 @@ RUN chown -R www-data:www-data /var/www/html
 RUN chmod -R 755 /var/www/html
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
+# Configure PHP upload limits
+COPY api/docker/php.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Configure nginx
 RUN rm /etc/nginx/sites-enabled/default
 COPY api/docker/nginx.conf /etc/nginx/sites-enabled/default

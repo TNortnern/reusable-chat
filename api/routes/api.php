@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Api\V1\SessionController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\ConversationController;
@@ -114,4 +117,106 @@ Route::prefix('dashboard')->group(function () {
         Route::get('/workspaces/{id}/analytics/messages', [AnalyticsController::class, 'messages']);
         Route::get('/workspaces/{id}/analytics/users', [AnalyticsController::class, 'users']);
     });
+});
+
+// Health check endpoint (for debugging Redis and Bunny CDN)
+Route::get('/health', function () {
+    $results = [
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'services' => [],
+    ];
+
+    // Check Redis connectivity
+    try {
+        $redisClient = env('REDIS_CLIENT', 'phpredis');
+        $redisUrl = env('REDIS_URL') ? 'configured' : 'not configured';
+
+        // Test Redis connection
+        Redis::set('health_check', 'ok');
+        $redisValue = Redis::get('health_check');
+        Redis::del('health_check');
+
+        $results['services']['redis'] = [
+            'status' => $redisValue === 'ok' ? 'connected' : 'error',
+            'client' => $redisClient,
+            'url' => $redisUrl,
+        ];
+    } catch (\Exception $e) {
+        $results['services']['redis'] = [
+            'status' => 'error',
+            'error' => $e->getMessage(),
+        ];
+    }
+
+    // Check Cache driver
+    try {
+        $cacheDriver = config('cache.default');
+        Cache::put('health_check', 'ok', 10);
+        $cacheValue = Cache::get('health_check');
+        Cache::forget('health_check');
+
+        $results['services']['cache'] = [
+            'status' => $cacheValue === 'ok' ? 'connected' : 'error',
+            'driver' => $cacheDriver,
+        ];
+    } catch (\Exception $e) {
+        $results['services']['cache'] = [
+            'status' => 'error',
+            'driver' => config('cache.default'),
+            'error' => $e->getMessage(),
+        ];
+    }
+
+    // Check Queue driver
+    $results['services']['queue'] = [
+        'driver' => config('queue.default'),
+    ];
+
+    // Check Bunny CDN connectivity
+    try {
+        $bunnyEnabled = env('BUNNY_STORAGE_ENABLED', false);
+        if ($bunnyEnabled) {
+            $disk = Storage::disk('bunny');
+
+            // Try to write a test file
+            $testPath = 'health-check-' . time() . '.txt';
+            $disk->put($testPath, 'health check');
+
+            // Verify it exists
+            $exists = $disk->exists($testPath);
+
+            // Clean up
+            $disk->delete($testPath);
+
+            $results['services']['bunny'] = [
+                'status' => $exists ? 'connected' : 'error',
+                'cdn_url' => env('BUNNY_CDN_URL'),
+                'storage_zone' => env('BUNNY_STORAGE_ZONE'),
+            ];
+        } else {
+            $results['services']['bunny'] = [
+                'status' => 'disabled',
+                'message' => 'BUNNY_STORAGE_ENABLED is not set to true',
+            ];
+        }
+    } catch (\Exception $e) {
+        $results['services']['bunny'] = [
+            'status' => 'error',
+            'error' => $e->getMessage(),
+        ];
+    }
+
+    // Check Session driver
+    $results['services']['session'] = [
+        'driver' => config('session.driver'),
+    ];
+
+    // Overall status
+    $hasError = collect($results['services'])
+        ->contains(fn($service) => ($service['status'] ?? 'ok') === 'error');
+
+    $results['status'] = $hasError ? 'degraded' : 'ok';
+
+    return response()->json($results);
 });
