@@ -26,11 +26,14 @@ class BunnyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Storage::extend('bunny', function ($app, $config) {
+            // Map region code to BunnyCDNRegion constant
+            $region = $this->mapRegion($config['region'] ?? 'de');
+
             // Create the BunnyCDN client
             $client = new BunnyCDNClient(
                 $config['storage_zone'],
                 $config['api_key'],
-                $config['region'] ?? BunnyCDNRegion::FALKENSTEIN
+                $region
             );
 
             // Create the adapter with the client and CDN URL
@@ -42,5 +45,24 @@ class BunnyServiceProvider extends ServiceProvider
             // Wrap in Laravel's FilesystemAdapter for proper Storage facade integration
             return new FilesystemAdapter($filesystem, $adapter, $config);
         });
+    }
+
+    /**
+     * Map region code to BunnyCDNRegion constant.
+     */
+    protected function mapRegion(string $region): string
+    {
+        return match (strtolower($region)) {
+            'de', 'falkenstein' => BunnyCDNRegion::FALKENSTEIN,
+            'ny', 'new_york', 'new-york' => BunnyCDNRegion::NEW_YORK,
+            'la', 'los_angeles', 'los-angeles' => BunnyCDNRegion::LOS_ANGELES,
+            'sg', 'singapore' => BunnyCDNRegion::SINGAPORE,
+            'syd', 'sydney' => BunnyCDNRegion::SYDNEY,
+            'uk', 'london' => BunnyCDNRegion::UNITED_KINGDOM,
+            'se', 'stockholm' => BunnyCDNRegion::STOCKHOLM,
+            'br', 'sao_paulo', 'sao-paulo' => BunnyCDNRegion::SAO_PAULO,
+            'jh', 'johannesburg' => BunnyCDNRegion::JOHANNESBURG,
+            default => BunnyCDNRegion::FALKENSTEIN,
+        };
     }
 }

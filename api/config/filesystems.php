@@ -77,9 +77,8 @@ return [
             'driver' => 'bunny',
             'storage_zone' => env('BUNNY_STORAGE_ZONE'),
             'api_key' => env('BUNNY_STORAGE_API_KEY'),
-            'hostname' => env('BUNNY_STORAGE_HOSTNAME', 'storage.bunnycdn.com'),
+            'region' => env('BUNNY_STORAGE_REGION', 'de'), // de, ny, la, sg, syd, uk, se, br, jh
             'cdn_url' => env('BUNNY_CDN_URL'),
-            'path' => env('BUNNY_UPLOAD_PATH', 'uploads'),
         ],
 
     ],
