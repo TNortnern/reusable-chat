@@ -15,7 +15,8 @@ class UserTyping implements ShouldBroadcast
 
     public function __construct(
         public ChatUser $user,
-        public string $conversationId
+        public string $conversationId,
+        public bool $isTyping = true
     ) {}
 
     public function broadcastOn(): array
@@ -35,6 +36,7 @@ class UserTyping implements ShouldBroadcast
         return [
             'user_id' => $this->user->id,
             'name' => $this->user->name,
+            'is_typing' => $this->isTyping,
         ];
     }
 }

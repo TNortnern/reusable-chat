@@ -447,13 +447,20 @@ const connectEcho = () => {
         })
         .listen('.user.typing', (event: any) => {
           if (event.user_id !== sessionUserId.value) {
-            if (!typingUsers.value.includes(event.user_name)) {
-              typingUsers.value.push(event.user_name)
+            const userName = event.name || event.user_name
+            if (event.is_typing === false) {
+              // User stopped typing
+              typingUsers.value = typingUsers.value.filter(u => u !== userName)
+            } else {
+              // User is typing
+              if (!typingUsers.value.includes(userName)) {
+                typingUsers.value.push(userName)
+              }
+              // Remove after 3 seconds if no new typing event
+              setTimeout(() => {
+                typingUsers.value = typingUsers.value.filter(u => u !== userName)
+              }, 3000)
             }
-            // Remove after 3 seconds
-            setTimeout(() => {
-              typingUsers.value = typingUsers.value.filter(u => u !== event.user_name)
-            }, 3000)
           }
         })
         .subscribed(() => {
@@ -471,6 +478,10 @@ const connectEcho = () => {
 
 const sendMessage = async () => {
   if (!newMessage.value.trim() || sending.value) return
+
+  // Clear typing indicator immediately when sending
+  clearTimeout(typingTimeout)
+  sendTypingIndicator(false)
 
   const content = newMessage.value.trim()
   newMessage.value = ''
@@ -517,19 +528,30 @@ const sendMessage = async () => {
   }
 }
 
+const sendTypingIndicator = (isTyping: boolean) => {
+  if (!roomId.value) return
+
+  fetch(`${apiUrl}/api/widget/conversations/${roomId.value}/typing`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${sessionToken.value}`,
+    },
+    body: JSON.stringify({ is_typing: isTyping })
+  }).catch(() => {})
+}
+
 const handleTyping = () => {
   if (!roomId.value) return
   clearTimeout(typingTimeout)
 
   // Send typing indicator
-  fetch(`${apiUrl}/api/widget/conversations/${roomId.value}/typing`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${sessionToken.value}`,
-    }
-  }).catch(() => {})
+  sendTypingIndicator(true)
 
-  typingTimeout = setTimeout(() => {}, 1000)
+  // Auto-stop typing after 2 seconds of no input
+  typingTimeout = setTimeout(() => {
+    sendTypingIndicator(false)
+  }, 2000)
 }
 
 const scrollToBottom = () => {
