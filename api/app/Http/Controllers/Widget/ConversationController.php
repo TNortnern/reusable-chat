@@ -19,7 +19,7 @@ class ConversationController extends Controller
             ->whereHas('participants', function ($query) use ($user) {
                 $query->where('chat_user_id', $user->id);
             })
-            ->with(['participants.chatUser', 'lastMessage'])
+            ->with(['participants', 'lastMessage'])
             ->withCount(['messages as unread_count' => function ($query) use ($user) {
                 $query->whereDoesntHave('readBy', function ($q) use ($user) {
                     $q->where('chat_user_id', $user->id);
@@ -68,7 +68,7 @@ class ConversationController extends Controller
                 ->first();
 
             if ($existing) {
-                return response()->json($existing->load('participants.chatUser'), 200);
+                return response()->json($existing->load('participants'), 200);
             }
         }
 
@@ -94,7 +94,7 @@ class ConversationController extends Controller
             }
         }
 
-        return response()->json($conversation->load('participants.chatUser'), 201);
+        return response()->json($conversation->load('participants'), 201);
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -104,7 +104,7 @@ class ConversationController extends Controller
         $conversation = Conversation::where('workspace_id', $request->workspace->id)
             ->where('id', $id)
             ->whereHas('participants', fn($q) => $q->where('chat_user_id', $user->id))
-            ->with(['participants.chatUser'])
+            ->with(['participants'])
             ->firstOrFail();
 
         $messages = $conversation->messages()

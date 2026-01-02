@@ -16,7 +16,7 @@ class ConversationController extends Controller
         $workspace = $this->getWorkspace($request, $id);
 
         $conversations = Conversation::where('workspace_id', $workspace->id)
-            ->with(['participants.chatUser', 'lastMessage'])
+            ->with(['participants', 'lastMessage'])
             ->withCount('messages')
             ->orderByDesc('last_message_at')
             ->paginate(20);
@@ -30,7 +30,7 @@ class ConversationController extends Controller
 
         $conversation = Conversation::where('workspace_id', $workspace->id)
             ->where('id', $convId)
-            ->with(['participants.chatUser'])
+            ->with(['participants'])
             ->firstOrFail();
 
         $messages = $conversation->messages()

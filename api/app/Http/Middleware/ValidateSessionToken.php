@@ -11,7 +11,8 @@ class ValidateSessionToken
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $token = $request->bearerToken();
+        // Accept token from: Bearer header, or request body (for Pusher auth)
+        $token = $request->bearerToken() ?: $request->input('auth_token');
 
         if (!$token) {
             return response()->json(['error' => 'Session token required'], 401);

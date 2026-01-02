@@ -28,7 +28,7 @@ class ConversationController extends Controller
             ->whereHas('participants', function ($query) use ($user) {
                 $query->where('chat_user_id', $user->id);
             })
-            ->with(['participants.chatUser', 'lastMessage'])
+            ->with(['participants', 'lastMessage'])
             ->orderByDesc('last_message_at')
             ->paginate($validated['per_page'] ?? 20);
 
@@ -68,7 +68,7 @@ class ConversationController extends Controller
                 ->first();
 
             if ($existing) {
-                return response()->json($existing->load('participants.chatUser'), 200);
+                return response()->json($existing->load('participants'), 200);
             }
         }
 
@@ -85,7 +85,7 @@ class ConversationController extends Controller
             ]);
         }
 
-        return response()->json($conversation->load('participants.chatUser'), 201);
+        return response()->json($conversation->load('participants'), 201);
     }
 
     public function addParticipant(Request $request, string $id): JsonResponse
@@ -119,6 +119,6 @@ class ConversationController extends Controller
             'chat_user_id' => $user->id,
         ]);
 
-        return response()->json($conversation->load('participants.chatUser'));
+        return response()->json($conversation->load('participants'));
     }
 }

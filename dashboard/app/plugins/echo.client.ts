@@ -7,6 +7,8 @@ export default defineNuxtPlugin(() => {
   // Make Pusher available globally for Echo
   window.Pusher = Pusher as any
 
+  const apiUrl = config.public.apiUrl || 'http://localhost:3021'
+
   const echo = new Echo({
     broadcaster: 'reverb',
     key: config.public.reverbKey || 'chat-app-key',
@@ -16,6 +18,7 @@ export default defineNuxtPlugin(() => {
     forceTLS: false,
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
+    authEndpoint: `${apiUrl}/api/widget/broadcasting/auth`,
   })
 
   return {

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\SessionController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\ConversationController;
 use App\Http\Controllers\Api\V1\ModerationController;
+use App\Http\Controllers\Api\V1\DemoController;
 use App\Http\Controllers\Widget\MeController;
 use App\Http\Controllers\Widget\ConversationController as WidgetConversationController;
 use App\Http\Controllers\Widget\MessageController;
@@ -42,6 +43,9 @@ Route::prefix('v1')->middleware('api.key')->group(function () {
     Route::post('/users/{id}/ban', [ModerationController::class, 'ban']);
     Route::delete('/users/{id}/ban', [ModerationController::class, 'unban']);
     Route::get('/bans', [ModerationController::class, 'index']);
+
+    // Demo
+    Route::post('/demo/rooms', [DemoController::class, 'createRoom']);
 });
 
 // Widget API - Session Token Auth
