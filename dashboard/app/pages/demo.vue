@@ -405,6 +405,7 @@ const joinConversation = async () => {
   try {
     const res = await fetch(`${apiUrl}/api/widget/conversations/${roomId.value}`, {
       headers: {
+        'Accept': 'application/json',
         'Authorization': `Bearer ${sessionToken.value}`,
       }
     })
@@ -510,7 +511,8 @@ const connectEcho = () => {
               content: event.content,
               sender_id: event.sender?.id,
               sender_name: event.sender?.name || 'Unknown',
-              created_at: event.created_at
+              created_at: event.created_at,
+              attachments: event.attachments || []
             })
             scrollToBottom()
 
@@ -603,6 +605,7 @@ const sendMessage = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': `Bearer ${sessionToken.value}`,
       },
       body: JSON.stringify({
@@ -639,6 +642,7 @@ const sendTypingIndicator = (isTyping: boolean) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       'Authorization': `Bearer ${sessionToken.value}`,
     },
     body: JSON.stringify({ is_typing: isTyping })
@@ -717,6 +721,7 @@ const uploadFiles = async (): Promise<Attachment[]> => {
       const res = await fetch(`${apiUrl}/api/widget/conversations/${roomId.value}/attachments`, {
         method: 'POST',
         headers: {
+          'Accept': 'application/json',
           'Authorization': `Bearer ${sessionToken.value}`,
         },
         body: formData

@@ -27,14 +27,23 @@ class AttachmentController extends Controller
             ->firstOrFail();
 
         $file = $validated['file'];
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $extension = $file->getClientOriginalExtension() ?: 'bin';
+        $filename = Str::uuid() . '.' . $extension;
 
         // Use Bunny CDN if enabled, otherwise local public disk
         $disk = env('BUNNY_STORAGE_ENABLED') ? 'bunny' : 'public';
-        $storagePath = "workspaces/{$workspace->id}/attachments/{$filename}";
+        $storagePath = "workspaces/{$workspace->id}/attachments";
 
-        \Illuminate\Support\Facades\Storage::disk($disk)->put($storagePath, file_get_contents($file));
-        $path = $storagePath;
+        // Use putFileAs for proper file handling with streams
+        $path = \Illuminate\Support\Facades\Storage::disk($disk)->putFileAs(
+            $storagePath,
+            $file,
+            $filename
+        );
+
+        if (!$path) {
+            return response()->json(['error' => 'Failed to upload file'], 500);
+        }
 
         $attachment = Attachment::create([
             'workspace_id' => $workspace->id,
