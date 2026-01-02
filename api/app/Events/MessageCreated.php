@@ -41,9 +41,10 @@ class MessageCreated implements ShouldBroadcast
             ],
             'attachments' => $this->message->attachments->map(fn($a) => [
                 'id' => $a->id,
-                'filename' => $a->filename,
-                'mime_type' => $a->mime_type,
+                'name' => $a->name,
+                'type' => $a->type,
                 'url' => $a->url,
+                'size' => $a->size,
             ]),
             'created_at' => $this->message->created_at->toISOString(),
         ];

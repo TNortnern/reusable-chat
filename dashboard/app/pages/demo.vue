@@ -83,6 +83,18 @@
               <span class="message-time">{{ formatTime(msg.created_at) }}</span>
             </div>
             <div class="message-text">{{ msg.content }}</div>
+            <div v-if="msg.attachments && msg.attachments.length > 0" class="message-attachments">
+              <div v-for="attachment in msg.attachments" :key="attachment.id" class="attachment">
+                <img v-if="attachment.type.startsWith('image/')" :src="attachment.url" :alt="attachment.name" class="attachment-image" @click="openImage(attachment.url)" />
+                <a v-else :href="attachment.url" target="_blank" class="attachment-file">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  {{ attachment.name }}
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -91,7 +103,49 @@
         </div>
       </div>
 
+      <!-- File Preview -->
+      <div v-if="pendingFiles.length > 0" class="file-preview-area">
+        <div v-for="(file, index) in pendingFiles" :key="index" class="file-preview">
+          <img v-if="file.type.startsWith('image/')" :src="file.preview" class="preview-image" />
+          <div v-else class="preview-file">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <span class="preview-name">{{ file.name }}</span>
+          <button @click="removeFile(index)" class="remove-file-btn">&times;</button>
+        </div>
+      </div>
+
       <div class="input-area">
+        <!-- Emoji Picker -->
+        <div class="emoji-picker-container">
+          <button @click="toggleEmojiPicker" class="icon-btn" title="Add emoji">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+              <line x1="9" y1="9" x2="9.01" y2="9"/>
+              <line x1="15" y1="9" x2="15.01" y2="9"/>
+            </svg>
+          </button>
+          <div v-if="showEmojiPicker" class="emoji-picker">
+            <div class="emoji-grid">
+              <button v-for="emoji in commonEmojis" :key="emoji" @click="insertEmoji(emoji)" class="emoji-btn">
+                {{ emoji }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- File Upload -->
+        <button @click="triggerFileUpload" class="icon-btn" title="Attach file">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+        </button>
+        <input ref="fileInput" type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" @change="handleFileSelect" class="hidden-file-input" />
+
         <input
           v-model="newMessage"
           type="text"
@@ -99,8 +153,9 @@
           class="message-input"
           @keyup.enter="sendMessage"
           @input="handleTyping"
+          @click="showEmojiPicker = false"
         />
-        <button @click="sendMessage" :disabled="!newMessage.trim() || sending" class="send-btn">
+        <button @click="sendMessage" :disabled="(!newMessage.trim() && pendingFiles.length === 0) || sending" class="send-btn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
           </svg>
@@ -123,12 +178,28 @@ const { $echo } = useNuxtApp()
 // Demo configuration - API key from environment
 const API_KEY = config.public.demoApiKey as string
 
+interface Attachment {
+  id: string
+  name: string
+  type: string
+  url: string
+  size: number
+}
+
+interface PendingFile {
+  file: File
+  name: string
+  type: string
+  preview: string
+}
+
 interface Message {
   id: string
   content: string
   sender_id: string
   sender_name: string
   created_at: string
+  attachments?: Attachment[]
 }
 
 interface Participant {
@@ -156,6 +227,19 @@ const sending = ref(false)
 const participants = ref<Participant[]>([])
 const typingUsers = ref<string[]>([])
 const messagesContainer = ref<HTMLElement | null>(null)
+
+// Emoji picker
+const showEmojiPicker = ref(false)
+const commonEmojis = [
+  '😀', '😂', '🥹', '😍', '🥰', '😘', '🤔', '😅',
+  '😭', '😤', '🤯', '🥳', '😎', '🤩', '😇', '🙄',
+  '👍', '👎', '❤️', '🔥', '💯', '✨', '🎉', '👀',
+  '🙏', '💪', '🤝', '👏', '🫡', '🤷', '🤦', '💀'
+]
+
+// File upload
+const fileInput = ref<HTMLInputElement | null>(null)
+const pendingFiles = ref<PendingFile[]>([])
 
 let typingTimeout: ReturnType<typeof setTimeout>
 let echoChannel: any = null
@@ -477,35 +561,54 @@ const connectEcho = () => {
 
 
 const sendMessage = async () => {
-  if (!newMessage.value.trim() || sending.value) return
+  if ((!newMessage.value.trim() && pendingFiles.value.length === 0) || sending.value) return
 
   // Clear typing indicator immediately when sending
   clearTimeout(typingTimeout)
   sendTypingIndicator(false)
 
   const content = newMessage.value.trim()
+  const hasFiles = pendingFiles.value.length > 0
   newMessage.value = ''
   sending.value = true
 
-  // Add optimistically
+  // Add optimistically (without attachments for now)
   const tempId = `temp-${Date.now()}`
+  const tempAttachments = pendingFiles.value.map((f, i) => ({
+    id: `temp-attach-${i}`,
+    name: f.name,
+    type: f.type,
+    url: f.preview || '',
+    size: f.file.size
+  }))
+
   messages.value.push({
     id: tempId,
-    content,
+    content: content || (hasFiles ? '📎 Attachment' : ''),
     sender_id: sessionUserId.value,
     sender_name: userName.value,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    attachments: tempAttachments
   })
   scrollToBottom()
 
   try {
+    // Upload files first if any
+    let uploadedAttachments: Attachment[] = []
+    if (hasFiles) {
+      uploadedAttachments = await uploadFiles()
+    }
+
     const res = await fetch(`${apiUrl}/api/widget/conversations/${roomId.value}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${sessionToken.value}`,
       },
-      body: JSON.stringify({ content })
+      body: JSON.stringify({
+        content: content || '',
+        attachment_ids: uploadedAttachments.map(a => a.id)
+      })
     })
 
     if (!res.ok) {
@@ -513,10 +616,11 @@ const sendMessage = async () => {
     }
 
     const data = await res.json()
-    // Update temp message with real ID
+    // Update temp message with real data
     const tempMsg = messages.value.find(m => m.id === tempId)
     if (tempMsg) {
       tempMsg.id = data.id
+      tempMsg.attachments = data.attachments || uploadedAttachments
     }
   } catch (error) {
     console.error('Failed to send:', error)
@@ -552,6 +656,92 @@ const handleTyping = () => {
   typingTimeout = setTimeout(() => {
     sendTypingIndicator(false)
   }, 2000)
+}
+
+// Emoji picker functions
+const toggleEmojiPicker = () => {
+  showEmojiPicker.value = !showEmojiPicker.value
+}
+
+const insertEmoji = (emoji: string) => {
+  newMessage.value += emoji
+  showEmojiPicker.value = false
+}
+
+// File upload functions
+const triggerFileUpload = () => {
+  fileInput.value?.click()
+}
+
+const handleFileSelect = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files) return
+
+  Array.from(input.files).forEach(file => {
+    // Create preview for images
+    let preview = ''
+    if (file.type.startsWith('image/')) {
+      preview = URL.createObjectURL(file)
+    }
+
+    pendingFiles.value.push({
+      file,
+      name: file.name,
+      type: file.type,
+      preview
+    })
+  })
+
+  // Reset input
+  input.value = ''
+}
+
+const removeFile = (index: number) => {
+  const file = pendingFiles.value[index]
+  if (file.preview) {
+    URL.revokeObjectURL(file.preview)
+  }
+  pendingFiles.value.splice(index, 1)
+}
+
+const uploadFiles = async (): Promise<Attachment[]> => {
+  if (pendingFiles.value.length === 0) return []
+
+  const attachments: Attachment[] = []
+
+  for (const pending of pendingFiles.value) {
+    const formData = new FormData()
+    formData.append('file', pending.file)
+
+    try {
+      const res = await fetch(`${apiUrl}/api/widget/conversations/${roomId.value}/attachments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionToken.value}`,
+        },
+        body: formData
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        attachments.push(data)
+      }
+    } catch (error) {
+      console.error('Failed to upload file:', error)
+    }
+
+    // Clean up preview
+    if (pending.preview) {
+      URL.revokeObjectURL(pending.preview)
+    }
+  }
+
+  pendingFiles.value = []
+  return attachments
+}
+
+const openImage = (url: string) => {
+  window.open(url, '_blank')
 }
 
 const scrollToBottom = () => {
@@ -915,5 +1105,179 @@ onUnmounted(() => {
 .send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Icon buttons */
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: background 0.2s, color 0.2s;
+}
+
+.icon-btn:hover {
+  background: #f3f4f6;
+  color: #667eea;
+}
+
+/* Emoji Picker */
+.emoji-picker-container {
+  position: relative;
+}
+
+.emoji-picker {
+  position: absolute;
+  bottom: 50px;
+  left: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  z-index: 100;
+  width: 280px;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.emoji-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.emoji-btn:hover {
+  background: #f3f4f6;
+}
+
+/* File Upload */
+.hidden-file-input {
+  display: none;
+}
+
+.file-preview-area {
+  padding: 8px 20px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.file-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  max-width: 200px;
+}
+
+.preview-image {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.preview-file {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  border-radius: 6px;
+  color: #666;
+}
+
+.preview-name {
+  font-size: 12px;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+}
+
+.remove-file-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Message Attachments */
+.message-attachments {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attachment-image {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.attachment-image:hover {
+  transform: scale(1.02);
+}
+
+.attachment-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.message.own .attachment-file {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.attachment-file:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.message.own .attachment-file:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 </style>

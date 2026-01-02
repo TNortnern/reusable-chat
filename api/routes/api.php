@@ -65,8 +65,7 @@ Route::prefix('widget')->middleware('session.token')->group(function () {
 
     Route::post('/conversations/{conversationId}/read', [ReadReceiptController::class, 'store']);
     Route::post('/conversations/{conversationId}/typing', [TypingController::class, 'store']);
-
-    Route::post('/attachments', [AttachmentController::class, 'store']);
+    Route::post('/conversations/{conversationId}/attachments', [AttachmentController::class, 'store']);
 
     Route::post('/users/{id}/block', [BlockController::class, 'store']);
     Route::delete('/users/{id}/block', [BlockController::class, 'destroy']);

@@ -12,6 +12,9 @@ if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:" ]; then
     php /var/www/html/artisan key:generate --force
 fi
 
+# Create storage symlink for public files
+php /var/www/html/artisan storage:link --force 2>/dev/null || true
+
 # Clear and cache configs
 php /var/www/html/artisan config:cache
 php /var/www/html/artisan route:cache
