@@ -426,6 +426,12 @@ const connectEcho = () => {
             })
             scrollToBottom()
 
+            // Clear typing indicator when message received from that user
+            const senderName = event.sender?.name
+            if (senderName) {
+              typingUsers.value = typingUsers.value.filter(u => u !== senderName)
+            }
+
             // Add to participants if new
             if (!participants.value.find(p => p.id === event.sender?.id)) {
               participants.value.push({
