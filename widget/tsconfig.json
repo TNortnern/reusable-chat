@@ -6,7 +6,9 @@
     "strict": true,
     "declaration": true,
     "outDir": "dist",
-    "lib": ["ES2020", "DOM"]
+    "lib": ["ES2020", "DOM"],
+    "jsx": "preserve",
+    "types": ["vite/client"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "src/**/*.vue"]
 }

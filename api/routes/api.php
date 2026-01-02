@@ -28,7 +28,7 @@ use App\Http\Controllers\Dashboard\UserController as DashboardUserController;
 use App\Http\Controllers\Dashboard\AnalyticsController;
 
 // Consumer Backend API (v1) - API Key Auth
-Route::prefix('v1')->middleware('api.key')->group(function () {
+Route::prefix('v1')->middleware(['api.key', 'throttle:api-v1'])->group(function () {
     // Sessions
     Route::post('/sessions', [SessionController::class, 'store']);
     Route::delete('/sessions/{id}', [SessionController::class, 'destroy']);
@@ -52,7 +52,7 @@ Route::prefix('v1')->middleware('api.key')->group(function () {
 });
 
 // Widget API - Session Token Auth
-Route::prefix('widget')->middleware('session.token')->group(function () {
+Route::prefix('widget')->middleware(['session.token', 'throttle:widget'])->group(function () {
     Route::get('/me', [MeController::class, 'show']);
 
     // Broadcasting auth for Reverb
@@ -62,13 +62,22 @@ Route::prefix('widget')->middleware('session.token')->group(function () {
     Route::post('/conversations', [WidgetConversationController::class, 'store']);
     Route::get('/conversations/{id}', [WidgetConversationController::class, 'show']);
 
-    Route::post('/conversations/{conversationId}/messages', [MessageController::class, 'store']);
+    // Messages - specific rate limit + content validation
+    Route::post('/conversations/{conversationId}/messages', [MessageController::class, 'store'])
+        ->middleware(['throttle:widget-messages', 'validate.message']);
+
     Route::post('/conversations/{conversationId}/messages/{messageId}/reactions', [ReactionController::class, 'store']);
     Route::delete('/conversations/{conversationId}/messages/{messageId}/reactions/{emoji}', [ReactionController::class, 'destroy']);
 
     Route::post('/conversations/{conversationId}/read', [ReadReceiptController::class, 'store']);
-    Route::post('/conversations/{conversationId}/typing', [TypingController::class, 'store']);
-    Route::post('/conversations/{conversationId}/attachments', [AttachmentController::class, 'store']);
+
+    // Typing - specific rate limit
+    Route::post('/conversations/{conversationId}/typing', [TypingController::class, 'store'])
+        ->middleware('throttle:widget-typing');
+
+    // Attachments - specific rate limit
+    Route::post('/conversations/{conversationId}/attachments', [AttachmentController::class, 'store'])
+        ->middleware('throttle:widget-attachments');
 
     Route::post('/users/{id}/block', [BlockController::class, 'store']);
     Route::delete('/users/{id}/block', [BlockController::class, 'destroy']);
@@ -78,10 +87,10 @@ Route::prefix('widget')->middleware('session.token')->group(function () {
 Route::prefix('dashboard')->group(function () {
     // Auth (public)
     Route::post('/auth/login', [AuthController::class, 'login'])
-        ->middleware('throttle:5,1'); // 5 attempts per minute
+        ->middleware('throttle:login');
 
     // Protected routes
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:dashboard'])->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
 

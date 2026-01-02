@@ -49,14 +49,17 @@ export interface Conversation {
   name?: string
   participants: Participant[]
   last_message?: Message
+  lastMessage?: Message // API may return camelCase
   last_message_at?: string
   unread_count?: number
+  messages_count?: number
 }
 
 export interface Participant {
   id: string
   chat_user_id: string
-  chatUser: ChatUser
+  chatUser?: ChatUser
+  chat_user?: ChatUser // API may return snake_case
   last_read_at?: string
 }
 

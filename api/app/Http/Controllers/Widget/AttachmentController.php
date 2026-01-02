@@ -57,6 +57,7 @@ class AttachmentController extends Controller
             'type' => $file->getMimeType(),
             'path' => $path,
             'size' => $file->getSize(),
+            // TODO: Remove legacy fields after 2026_01_02_200000_make_legacy_attachment_columns_nullable migration runs
             // Legacy fields (for backwards compatibility with NOT NULL constraints)
             'filename' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),

@@ -1,12 +1,19 @@
 {
-  "name": "chat-widget",
+  "name": "@reusable-chat/widget",
   "version": "1.0.0",
+  "description": "Embeddable chat widget for Reusable Chat",
   "type": "module",
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch"
   },
+  "dependencies": {
+    "vue": "^3.4.38",
+    "laravel-echo": "^1.16.1",
+    "pusher-js": "^8.4.0-rc2"
+  },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.2",
     "terser": "^5.37.0",
     "typescript": "^5.9.3",
     "vite": "^6.3.5"

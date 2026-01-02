@@ -13,9 +13,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Global middleware - applied to all API requests
+        $middleware->api(prepend: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
+        // Middleware aliases
         $middleware->alias([
             'api.key' => \App\Http\Middleware\ValidateApiKey::class,
             'session.token' => \App\Http\Middleware\ValidateSessionToken::class,
+            'validate.message' => \App\Http\Middleware\ValidateMessageContent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
