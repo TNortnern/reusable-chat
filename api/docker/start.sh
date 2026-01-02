@@ -4,6 +4,9 @@ set -e
 # Run migrations
 php /var/www/html/artisan migrate --force
 
+# Seed admin user (idempotent - creates if not exists)
+php /var/www/html/artisan db:seed --class=AdminSeeder --force 2>/dev/null || true
+
 # Seed demo data (if not already seeded)
 php /var/www/html/artisan db:seed --class=DemoSeeder --force 2>/dev/null || true
 
