@@ -20,7 +20,7 @@ class ConversationController extends Controller
                 $query->where('chat_user_id', $user->id);
             })
             ->with(['participants', 'lastMessage'])
-            ->orderByDesc('last_message_at')
+            ->orderByDesc('updated_at')
             ->paginate(20);
 
         // Add unread count based on participant's last_read_at timestamp
