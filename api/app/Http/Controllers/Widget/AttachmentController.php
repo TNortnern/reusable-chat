@@ -45,7 +45,11 @@ class AttachmentController extends Controller
             return response()->json(['error' => 'Failed to upload file'], 500);
         }
 
+        // Generate the public URL for the uploaded file
+        $url = \Illuminate\Support\Facades\Storage::disk($disk)->url($path);
+
         $attachment = Attachment::create([
+            // New fields
             'workspace_id' => $workspace->id,
             'conversation_id' => $conversation->id,
             'chat_user_id' => $user->id,
@@ -53,6 +57,11 @@ class AttachmentController extends Controller
             'type' => $file->getMimeType(),
             'path' => $path,
             'size' => $file->getSize(),
+            // Legacy fields (for backwards compatibility with NOT NULL constraints)
+            'filename' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(),
+            'size_bytes' => $file->getSize(),
+            'url' => $url,
         ]);
 
         return response()->json($attachment, 201);
