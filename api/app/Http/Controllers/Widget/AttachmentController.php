@@ -29,11 +29,12 @@ class AttachmentController extends Controller
         $file = $validated['file'];
         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
 
-        $path = $file->storeAs(
-            "workspaces/{$workspace->id}/attachments",
-            $filename,
-            'public'
-        );
+        // Use Bunny CDN if enabled, otherwise local public disk
+        $disk = env('BUNNY_STORAGE_ENABLED') ? 'bunny' : 'public';
+        $storagePath = "workspaces/{$workspace->id}/attachments/{$filename}";
+
+        \Illuminate\Support\Facades\Storage::disk($disk)->put($storagePath, file_get_contents($file));
+        $path = $storagePath;
 
         $attachment = Attachment::create([
             'workspace_id' => $workspace->id,

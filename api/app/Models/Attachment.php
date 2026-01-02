@@ -53,7 +53,8 @@ class Attachment extends Model
     public function getComputedUrlAttribute(): string
     {
         if ($this->path) {
-            return Storage::disk('public')->url($this->path);
+            $disk = env('BUNNY_STORAGE_ENABLED') ? 'bunny' : 'public';
+            return Storage::disk($disk)->url($this->path);
         }
         return $this->attributes['url'] ?? '';
     }
