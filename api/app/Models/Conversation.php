@@ -38,7 +38,8 @@ class Conversation extends Model
 
     public function lastMessage(): HasOne
     {
-        // Use created_at instead of latestOfMany() since PostgreSQL doesn't support MAX(uuid)
-        return $this->hasOne(Message::class)->latestOfMany('created_at');
+        // Avoid latestOfMany() as PostgreSQL doesn't support MAX(uuid)
+        // Use orderBy with limit instead
+        return $this->hasOne(Message::class)->orderByDesc('created_at');
     }
 }
