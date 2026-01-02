@@ -20,13 +20,28 @@ class ConversationController extends Controller
                 $query->where('chat_user_id', $user->id);
             })
             ->with(['participants', 'lastMessage'])
-            ->withCount(['messages as unread_count' => function ($query) use ($user) {
-                $query->whereDoesntHave('readBy', function ($q) use ($user) {
-                    $q->where('chat_user_id', $user->id);
-                });
-            }])
             ->orderByDesc('last_message_at')
             ->paginate(20);
+
+        // Add unread count based on participant's last_read_at timestamp
+        $conversations->getCollection()->transform(function ($conversation) use ($user) {
+            $participant = $conversation->participants->firstWhere('chat_user_id', $user->id);
+            $lastReadAt = $participant?->last_read_at;
+
+            if ($lastReadAt) {
+                $conversation->unread_count = $conversation->messages()
+                    ->where('created_at', '>', $lastReadAt)
+                    ->where('sender_id', '!=', $user->id)
+                    ->count();
+            } else {
+                // Never read - all messages from others are unread
+                $conversation->unread_count = $conversation->messages()
+                    ->where('sender_id', '!=', $user->id)
+                    ->count();
+            }
+
+            return $conversation;
+        });
 
         return response()->json($conversations);
     }
