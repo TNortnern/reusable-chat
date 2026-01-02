@@ -14,10 +14,18 @@ class MessageController extends Controller
     public function store(Request $request, string $conversationId): JsonResponse
     {
         $validated = $request->validate([
-            'content' => 'required_without:attachment_ids|string|max:5000',
+            'content' => 'nullable|string|max:5000',
             'attachment_ids' => 'nullable|array',
             'attachment_ids.*' => 'uuid',
         ]);
+
+        // Require at least content or attachments
+        if (empty($validated['content']) && empty($validated['attachment_ids'])) {
+            return response()->json([
+                'message' => 'Either content or attachments are required.',
+                'errors' => ['content' => ['Either content or attachments are required.']]
+            ], 422);
+        }
 
         $user = $request->chatUser;
         $workspace = $request->workspace;
