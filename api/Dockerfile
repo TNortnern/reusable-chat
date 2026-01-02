@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libpq-dev \
     zip \
-    unzip
+    unzip \
+    supervisor \
+    nginx
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd
@@ -25,19 +27,27 @@ WORKDIR /var/www/html
 
 # Copy composer files first for caching
 COPY composer.json composer.lock ./
-RUN composer install --no-scripts --no-autoloader
+RUN composer install --no-scripts --no-autoloader --no-dev
 
 # Copy application code
 COPY . .
 
-# Generate autoloader
+# Generate autoloader and run post-install scripts
 RUN composer dump-autoload --optimize
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Expose port
+# Configure nginx
+RUN rm /etc/nginx/sites-enabled/default
+COPY docker/nginx.conf /etc/nginx/sites-enabled/default
+
+# Configure supervisord
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Expose single port (nginx proxies WebSocket to Reverb internally)
 EXPOSE 8000
 
-# Start PHP built-in server
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Start supervisord (runs nginx, php-fpm, queue worker, and reverb)
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
