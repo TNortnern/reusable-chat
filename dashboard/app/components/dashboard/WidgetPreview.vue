@@ -25,8 +25,8 @@
         class="chat-widget"
         :class="positionClass"
       >
-        <!-- Header -->
-        <div class="widget-header">
+        <!-- Support Chat Header -->
+        <div v-if="chatType === 'support'" class="widget-header">
           <div class="flex items-center gap-3">
             <div v-if="settings.logoUrl" class="widget-logo">
               <img :src="settings.logoUrl" alt="Logo" />
@@ -41,8 +41,37 @@
           </div>
         </div>
 
-        <!-- Messages -->
-        <div class="widget-messages">
+        <!-- User-to-User Chat Header -->
+        <div v-else-if="chatType === 'user-to-user'" class="widget-header">
+          <div class="flex items-center gap-3">
+            <div class="user-avatar user-avatar-dm">
+              <span>S</span>
+              <span class="online-indicator"></span>
+            </div>
+            <div>
+              <h3 class="widget-title">Sarah Johnson</h3>
+              <p class="widget-subtitle">Online now</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group Chat Header -->
+        <div v-else-if="chatType === 'group'" class="widget-header">
+          <div class="flex items-center gap-3">
+            <div class="group-avatars">
+              <div class="group-avatar ga-1">M</div>
+              <div class="group-avatar ga-2">J</div>
+              <div class="group-avatar ga-3">A</div>
+            </div>
+            <div>
+              <h3 class="widget-title">Project Team</h3>
+              <p class="widget-subtitle">5 members, 3 online</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support Chat Messages -->
+        <div v-if="chatType === 'support'" class="widget-messages">
           <div class="message message-received">
             <div class="message-bubble">
               Hi there! How can we help you today?
@@ -60,11 +89,79 @@
           </div>
         </div>
 
+        <!-- User-to-User Chat Messages -->
+        <div v-else-if="chatType === 'user-to-user'" class="widget-messages">
+          <div class="message message-received with-avatar">
+            <div class="message-user-avatar">S</div>
+            <div class="message-content-wrapper">
+              <div class="message-bubble">
+                Hey! Are you still interested in the apartment?
+              </div>
+              <span class="message-time">2:30 PM</span>
+            </div>
+          </div>
+          <div class="message message-sent">
+            <div class="message-content-wrapper">
+              <div class="message-bubble">
+                Yes! I'd love to schedule a viewing
+              </div>
+              <span class="message-time">2:32 PM</span>
+            </div>
+          </div>
+          <div class="message message-received with-avatar">
+            <div class="message-user-avatar">S</div>
+            <div class="message-content-wrapper">
+              <div class="message-bubble">
+                How about tomorrow at 3 PM?
+              </div>
+              <span class="message-time">2:33 PM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group Chat Messages -->
+        <div v-else-if="chatType === 'group'" class="widget-messages">
+          <div class="message message-received with-avatar">
+            <div class="message-user-avatar bg-blue-500">M</div>
+            <div class="message-content-wrapper">
+              <span class="message-sender">Mike Chen</span>
+              <div class="message-bubble">
+                Hey team, I've updated the design files
+              </div>
+            </div>
+          </div>
+          <div class="message message-received with-avatar">
+            <div class="message-user-avatar bg-purple-500">J</div>
+            <div class="message-content-wrapper">
+              <span class="message-sender">Julia Park</span>
+              <div class="message-bubble">
+                Awesome! I'll review them today
+              </div>
+            </div>
+          </div>
+          <div class="message message-sent">
+            <div class="message-content-wrapper">
+              <div class="message-bubble">
+                Thanks Mike! The new layouts look great
+              </div>
+            </div>
+          </div>
+          <div class="message message-received with-avatar">
+            <div class="message-user-avatar bg-green-500">A</div>
+            <div class="message-content-wrapper">
+              <span class="message-sender">Alex Rivera</span>
+              <div class="message-bubble">
+                Can we discuss the timeline in our standup?
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Input -->
         <div class="widget-input">
           <input
             type="text"
-            placeholder="Type your message..."
+            :placeholder="inputPlaceholder"
             class="input-field"
           />
           <button class="send-button">
@@ -82,6 +179,8 @@
 </template>
 
 <script setup lang="ts">
+type ChatType = 'support' | 'user-to-user' | 'group'
+
 interface WidgetSettings {
   primaryColor: string
   backgroundColor: string
@@ -91,11 +190,14 @@ interface WidgetSettings {
   fontFamily: string
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   settings: WidgetSettings
-}>()
+  chatType?: ChatType
+}>(), {
+  chatType: 'support'
+})
 
-const isOpen = ref(false)
+const isOpen = ref(true) // Start open by default for preview
 
 const positionClass = computed(() => {
   return props.settings.position === 'bottom-left' ? 'position-left' : 'position-right'
@@ -106,6 +208,19 @@ const customStyles = computed(() => {
     '--widget-primary': props.settings.primaryColor,
     '--widget-bg': props.settings.backgroundColor,
     '--widget-font': props.settings.fontFamily || 'var(--chat-font-body)',
+  }
+})
+
+const inputPlaceholder = computed(() => {
+  switch (props.chatType) {
+    case 'support':
+      return 'Type your message...'
+    case 'user-to-user':
+      return 'Message Sarah...'
+    case 'group':
+      return 'Message Project Team...'
+    default:
+      return 'Type your message...'
   }
 })
 </script>
@@ -332,6 +447,124 @@ const customStyles = computed(() => {
   transform: translateY(20px) scale(0.95);
 }
 
+/* User Avatar for DM */
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  position: relative;
+}
+
+.user-avatar-dm {
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--chat-text-inverse);
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background: #22c55e;
+  border: 2px solid var(--widget-primary, var(--chat-accent));
+  border-radius: 50%;
+}
+
+/* Group Avatars */
+.group-avatars {
+  position: relative;
+  width: 50px;
+  height: 40px;
+}
+
+.group-avatar {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 11px;
+  color: white;
+  border: 2px solid var(--widget-primary, var(--chat-accent));
+}
+
+.group-avatar.ga-1 {
+  background: #3b82f6;
+  left: 0;
+  top: 0;
+  z-index: 3;
+}
+
+.group-avatar.ga-2 {
+  background: #a855f7;
+  left: 14px;
+  top: 6px;
+  z-index: 2;
+}
+
+.group-avatar.ga-3 {
+  background: #22c55e;
+  left: 0;
+  top: 12px;
+  z-index: 1;
+}
+
+/* Message with Avatar */
+.message.with-avatar {
+  flex-direction: row;
+  gap: 8px;
+}
+
+.message-user-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12px;
+  color: white;
+  background: var(--widget-primary, #6b7280);
+}
+
+.message-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.message-sender {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--chat-text-secondary);
+}
+
+.message-time {
+  font-size: 11px;
+  color: var(--chat-text-secondary);
+  opacity: 0.7;
+}
+
+.message-sent .message-time {
+  align-self: flex-end;
+}
+
+/* Adjust bubble for messages with avatar */
+.message.with-avatar .message-bubble {
+  max-width: 100%;
+}
+
 /* Dark mode adjustments */
 [data-theme="dark"] .widget-messages {
   background: var(--chat-bg-primary);
@@ -340,5 +573,9 @@ const customStyles = computed(() => {
 [data-theme="dark"] .input-field {
   background: var(--chat-bg-secondary);
   border-color: var(--chat-bg-tertiary);
+}
+
+[data-theme="dark"] .message-sender {
+  color: var(--chat-text-secondary);
 }
 </style>

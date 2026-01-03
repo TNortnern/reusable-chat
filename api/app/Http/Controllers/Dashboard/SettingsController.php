@@ -29,7 +29,16 @@ class SettingsController extends Controller
             'webhook_secret' => 'nullable|string|max:100',
         ]);
 
-        $workspace->settings->update(array_filter($validated, fn($v) => $v !== null));
+        $nullableFields = ['webhook_url', 'webhook_secret'];
+        $updateData = [];
+
+        foreach ($validated as $key => $value) {
+            if ($value !== null || ($request->has($key) && in_array($key, $nullableFields))) {
+                $updateData[$key] = $value;
+            }
+        }
+
+        $workspace->settings->update($updateData);
         return response()->json($workspace->settings);
     }
 

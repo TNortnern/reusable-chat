@@ -41,6 +41,16 @@ export interface ChatUser {
   avatar_url?: string
   is_anonymous: boolean
   last_seen_at?: string
+  conversations_count?: number
+  ban?: Ban
+}
+
+export interface Ban {
+  id: string
+  chat_user_id: string
+  reason?: string
+  expires_at?: string
+  created_at: string
 }
 
 export interface Conversation {
@@ -85,4 +95,13 @@ export interface Reaction {
   id: string
   emoji: string
   chat_user_id: string
+}
+
+export interface ApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  key?: string // Only returned once on creation
+  created_at: string
+  last_used_at?: string
 }

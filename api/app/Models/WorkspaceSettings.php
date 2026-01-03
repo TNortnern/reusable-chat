@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WorkspaceSettings extends Model
 {
+    use HasFactory;
     protected $table = 'workspace_settings';
     protected $primaryKey = 'workspace_id';
     public $incrementing = false;

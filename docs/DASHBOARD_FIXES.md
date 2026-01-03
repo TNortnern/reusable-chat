@@ -245,16 +245,60 @@ dashboard/app/pages/dashboard/
 
 ## Progress Tracking
 
-| Task | Status | Notes |
-|------|--------|-------|
-| Users API integration | [ ] | |
-| Analytics API integration | [ ] | |
-| Settings save/load | [ ] | |
-| API Keys CRUD | [ ] | |
-| Theme save/load | [ ] | |
-| Conversations API | [ ] | |
-| Widget preview types | [ ] | |
-| Settings UI redesign | [ ] | |
-| Loading states | [ ] | |
-| Error handling | [ ] | |
-| Confirmation modals | [ ] | |
+| Task | Code Done | Unit Tests | Browser Tested | Notes |
+|------|-----------|------------|----------------|-------|
+| API Keys CRUD | [x] | [x] 12 tests | [ ] | Full CRUD with modals |
+| Settings save/load | [x] | [x] 20 tests | [ ] | All toggles persist |
+| Theme save/load | [x] | [x] 14 tests | [ ] | Unsaved indicator added |
+| Users API integration | [x] | [x] 21 tests | [ ] | Real data + ban/unban |
+| Analytics API integration | [x] | [x] 22 tests | [ ] | Working date filters |
+| Conversations API | [ ] | [ ] | [ ] | Lower priority |
+| Widget preview types | [x] | N/A | [ ] | Support/DM/Group tabs |
+| Settings UI redesign | [x] | N/A | [ ] | Professional 2-col layout |
+| Loading states | [x] | N/A | [ ] | All pages have loaders |
+| Error handling | [x] | N/A | [ ] | Retry buttons added |
+| Confirmation modals | [x] | N/A | [ ] | Ban/delete modals |
+
+---
+
+## Testing Requirements
+
+### API Unit Tests (Laravel/PHPUnit)
+Location: `api/tests/Feature/Dashboard/`
+
+Required test files:
+- [x] `ApiKeyControllerTest.php` - 12 tests, 40 assertions
+- [x] `SettingsControllerTest.php` - 20 tests
+- [x] `ThemeControllerTest.php` - 14 tests, 38 assertions
+- [x] `UserControllerTest.php` - 21 tests
+- [x] `AnalyticsControllerTest.php` - 22 tests, 75 assertions
+- [ ] `ConversationControllerTest.php` - Conversation management (lower priority)
+
+### Browser Testing Checklist
+Test URL: http://localhost:3000/dashboard (or production URL)
+
+- [ ] Login to dashboard
+- [ ] Navigate to Settings > API Keys
+  - [ ] Create new API key
+  - [ ] See key in list
+  - [ ] Delete API key
+- [ ] Navigate to Settings
+  - [ ] Change a setting
+  - [ ] Save settings
+  - [ ] Refresh page - settings persist
+- [ ] Navigate to Theme
+  - [ ] Change colors
+  - [ ] Save theme
+  - [ ] Refresh page - theme persists
+- [ ] Navigate to Users
+  - [ ] See real users (not mock data)
+  - [ ] Filter by status
+  - [ ] Search works
+- [ ] Navigate to Analytics
+  - [ ] See real metrics
+  - [ ] Change date filter (7d, 30d, 90d)
+  - [ ] Data updates accordingly
+- [ ] Navigate to Widget Preview
+  - [ ] See customer chat preview
+  - [ ] See user-to-user chat preview
+  - [ ] See group chat preview

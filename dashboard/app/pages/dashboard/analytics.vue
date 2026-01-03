@@ -13,30 +13,52 @@
           :options="dateRangeOptions"
           size="lg"
           class="w-48"
+          :disabled="loading"
         />
-        <UButton variant="soft" @click="refreshData">
+        <UButton variant="soft" @click="refreshData" :loading="loading">
           <UIcon name="i-heroicons-arrow-path" />
           Refresh
         </UButton>
       </div>
     </UCard>
 
-    <!-- Key Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <UCard v-for="metric in keyMetrics" :key="metric.label">
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-[var(--chat-text-secondary)]">{{ metric.label }}</span>
-            <UIcon :name="metric.icon" :class="metric.iconColor" />
-          </div>
-          <div class="text-3xl font-bold text-[var(--chat-text-primary)]">{{ metric.value }}</div>
-          <div class="flex items-center gap-1 text-xs" :class="metric.changeColor">
-            <UIcon :name="metric.changeIcon" class="w-3 h-3" />
-            {{ metric.change }}
-          </div>
-        </div>
-      </UCard>
+    <!-- Loading State -->
+    <div v-if="loading" class="flex items-center justify-center py-12">
+      <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-[var(--chat-text-secondary)]" />
     </div>
+
+    <!-- Error State -->
+    <UAlert
+      v-else-if="error"
+      color="red"
+      icon="i-heroicons-exclamation-circle"
+      title="Error loading analytics"
+      :description="error"
+    >
+      <template #actions>
+        <UButton variant="soft" color="red" @click="refreshData">
+          Retry
+        </UButton>
+      </template>
+    </UAlert>
+
+    <template v-else>
+      <!-- Key Metrics -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <UCard v-for="metric in keyMetrics" :key="metric.label">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-[var(--chat-text-secondary)]">{{ metric.label }}</span>
+              <UIcon :name="metric.icon" :class="metric.iconColor" />
+            </div>
+            <div class="text-3xl font-bold text-[var(--chat-text-primary)]">{{ metric.value }}</div>
+            <div class="flex items-center gap-1 text-xs" :class="metric.changeColor">
+              <UIcon :name="metric.changeIcon" class="w-3 h-3" />
+              {{ metric.change }}
+            </div>
+          </div>
+        </UCard>
+      </div>
 
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -167,6 +189,7 @@
         </template>
       </UTable>
     </UCard>
+    </template>
   </div>
 </template>
 
@@ -175,78 +198,155 @@ definePageMeta({
   layout: 'dashboard'
 })
 
+const config = useRuntimeConfig()
+const toast = useToast()
+const { token, currentWorkspace } = useAuth()
+
+// State
+const loading = ref(true)
+const error = ref<string | null>(null)
 const dateRange = ref('7d')
+
 const dateRangeOptions = [
   { label: 'Last 7 days', value: '7d' },
   { label: 'Last 30 days', value: '30d' },
-  { label: 'Last 90 days', value: '90d' },
-  { label: 'This year', value: 'year' }
+  { label: 'Last 90 days', value: '90d' }
 ]
 
-const keyMetrics = ref([
-  {
-    label: 'Total Messages',
-    value: '24,589',
-    icon: 'i-heroicons-chat-bubble-left-right',
-    iconColor: 'text-blue-500',
-    change: '+12.5% vs last period',
-    changeColor: 'text-green-600',
-    changeIcon: 'i-heroicons-arrow-up'
-  },
-  {
-    label: 'Active Conversations',
-    value: '1,247',
-    icon: 'i-heroicons-users',
-    iconColor: 'text-purple-500',
-    change: '+8.2% vs last period',
-    changeColor: 'text-green-600',
-    changeIcon: 'i-heroicons-arrow-up'
-  },
-  {
-    label: 'Avg Response Time',
-    value: '2.3m',
-    icon: 'i-heroicons-clock',
-    iconColor: 'text-green-500',
-    change: '-15% vs last period',
-    changeColor: 'text-green-600',
-    changeIcon: 'i-heroicons-arrow-down'
-  },
-  {
-    label: 'Resolution Rate',
-    value: '94.2%',
-    icon: 'i-heroicons-check-circle',
-    iconColor: 'text-orange-500',
-    change: '+2.1% vs last period',
-    changeColor: 'text-green-600',
-    changeIcon: 'i-heroicons-arrow-up'
+// Helper to convert date range to days
+const getDaysFromRange = (range: string): number => {
+  switch (range) {
+    case '7d': return 7
+    case '30d': return 30
+    case '90d': return 90
+    default: return 7
   }
-])
+}
 
-const chartData = ref({
-  totalMessages: '24,589',
-  avgPerDay: '3,512',
-  peakHour: '2-3 PM'
+// Analytics data interfaces
+interface OverviewData {
+  total_users: number
+  total_conversations: number
+  total_messages: number
+  active_users_today: number
+}
+
+interface MessageStats {
+  date: string
+  count: number
+}
+
+interface UserStats {
+  date: string
+  count: number
+}
+
+// Analytics state
+const overviewData = ref<OverviewData | null>(null)
+const messageStats = ref<MessageStats[]>([])
+const userStats = ref<UserStats[]>([])
+
+// Computed key metrics based on real data
+const keyMetrics = computed(() => {
+  if (!overviewData.value) {
+    return []
+  }
+
+  const totalMessagesInPeriod = messageStats.value.reduce((sum, stat) => sum + stat.count, 0)
+  const newUsersInPeriod = userStats.value.reduce((sum, stat) => sum + stat.count, 0)
+
+  return [
+    {
+      label: 'Total Messages',
+      value: formatNumber(overviewData.value.total_messages),
+      icon: 'i-heroicons-chat-bubble-left-right',
+      iconColor: 'text-blue-500',
+      change: `${formatNumber(totalMessagesInPeriod)} in selected period`,
+      changeColor: 'text-[var(--chat-text-secondary)]',
+      changeIcon: 'i-heroicons-calendar'
+    },
+    {
+      label: 'Total Conversations',
+      value: formatNumber(overviewData.value.total_conversations),
+      icon: 'i-heroicons-users',
+      iconColor: 'text-purple-500',
+      change: `${formatNumber(overviewData.value.active_users_today)} active today`,
+      changeColor: 'text-[var(--chat-text-secondary)]',
+      changeIcon: 'i-heroicons-user-group'
+    },
+    {
+      label: 'Total Users',
+      value: formatNumber(overviewData.value.total_users),
+      icon: 'i-heroicons-user',
+      iconColor: 'text-green-500',
+      change: `+${formatNumber(newUsersInPeriod)} new in period`,
+      changeColor: newUsersInPeriod > 0 ? 'text-green-600' : 'text-[var(--chat-text-secondary)]',
+      changeIcon: newUsersInPeriod > 0 ? 'i-heroicons-arrow-up' : 'i-heroicons-minus'
+    },
+    {
+      label: 'Active Today',
+      value: formatNumber(overviewData.value.active_users_today),
+      icon: 'i-heroicons-signal',
+      iconColor: 'text-orange-500',
+      change: 'Users active today',
+      changeColor: 'text-[var(--chat-text-secondary)]',
+      changeIcon: 'i-heroicons-clock'
+    }
+  ]
 })
 
-const userData = ref({
-  totalUsers: '8,234',
-  newUsers: '+234',
-  retention: '78%'
+// Computed chart data from message stats
+const chartData = computed(() => {
+  const totalMessages = messageStats.value.reduce((sum, stat) => sum + stat.count, 0)
+  const days = messageStats.value.length || 1
+  const avgPerDay = Math.round(totalMessages / days)
+
+  // Find peak day
+  let peakDay = 'N/A'
+  if (messageStats.value.length > 0) {
+    const maxStat = messageStats.value.reduce((max, stat) =>
+      stat.count > max.count ? stat : max, messageStats.value[0])
+    const date = new Date(maxStat.date)
+    peakDay = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  }
+
+  return {
+    totalMessages: formatNumber(totalMessages),
+    avgPerDay: formatNumber(avgPerDay),
+    peakHour: peakDay
+  }
 })
 
+// Computed user data from user stats
+const userData = computed(() => {
+  const newUsers = userStats.value.reduce((sum, stat) => sum + stat.count, 0)
+  const totalUsers = overviewData.value?.total_users || 0
+
+  // Retention is a placeholder - would need historical data to calculate properly
+  const retention = totalUsers > 0 ? Math.min(100, Math.round((overviewData.value?.active_users_today || 0) / totalUsers * 100 * 10)) : 0
+
+  return {
+    totalUsers: formatNumber(totalUsers),
+    newUsers: `+${formatNumber(newUsers)}`,
+    retention: `${retention}%`
+  }
+})
+
+// Response time data (placeholder - needs backend support)
 const responseTimeData = ref([
-  { label: 'Under 1 minute', value: '45%', percentage: 45, barColor: 'bg-green-500' },
-  { label: '1-5 minutes', value: '32%', percentage: 32, barColor: 'bg-blue-500' },
-  { label: '5-15 minutes', value: '15%', percentage: 15, barColor: 'bg-yellow-500' },
-  { label: 'Over 15 minutes', value: '8%', percentage: 8, barColor: 'bg-red-500' }
+  { label: 'Under 1 minute', value: 'N/A', percentage: 0, barColor: 'bg-green-500' },
+  { label: '1-5 minutes', value: 'N/A', percentage: 0, barColor: 'bg-blue-500' },
+  { label: '5-15 minutes', value: 'N/A', percentage: 0, barColor: 'bg-yellow-500' },
+  { label: 'Over 15 minutes', value: 'N/A', percentage: 0, barColor: 'bg-red-500' }
 ])
 
-const conversationTypes = ref([
-  { label: 'Customer Support', count: 654, percentage: 52, dotColor: 'bg-blue-500' },
-  { label: 'Sales Inquiries', count: 312, percentage: 25, dotColor: 'bg-green-500' },
-  { label: 'Product Feedback', count: 187, percentage: 15, dotColor: 'bg-purple-500' },
-  { label: 'General', count: 94, percentage: 8, dotColor: 'bg-gray-500' }
-])
+// Conversation types (placeholder - needs backend support for types/categories)
+const conversationTypes = computed(() => {
+  const total = overviewData.value?.total_conversations || 0
+  return [
+    { label: 'All Conversations', count: total, percentage: 100, dotColor: 'bg-blue-500' }
+  ]
+})
 
 const conversationColumns = [
   { key: 'name', label: 'Conversation' },
@@ -255,15 +355,89 @@ const conversationColumns = [
   { key: 'lastActivity', label: 'Last Activity' }
 ]
 
-const topConversations = ref([
-  { name: 'Customer Support - John Doe', messages: 156, participants: 2, lastActivity: '5m ago' },
-  { name: 'Product Feedback Team', messages: 124, participants: 5, lastActivity: '15m ago' },
-  { name: 'Sales - Enterprise Lead', messages: 98, participants: 3, lastActivity: '1h ago' },
-  { name: 'Technical Support - Bug Report', messages: 87, participants: 2, lastActivity: '2h ago' },
-  { name: 'General Inquiries', messages: 76, participants: 4, lastActivity: '3h ago' }
-])
+// Top conversations (placeholder - needs backend endpoint)
+const topConversations = ref<Array<{ name: string; messages: number; participants: number; lastActivity: string }>>([])
 
-const refreshData = () => {
-  console.log('Refreshing analytics data...')
+// Helper to format numbers
+const formatNumber = (num: number): string => {
+  return num.toLocaleString()
 }
+
+// Fetch all analytics data
+const fetchAnalytics = async () => {
+  if (!currentWorkspace.value?.id) {
+    error.value = 'No workspace selected'
+    loading.value = false
+    return
+  }
+
+  loading.value = true
+  error.value = null
+
+  const days = getDaysFromRange(dateRange.value)
+  const workspaceId = currentWorkspace.value.id
+
+  try {
+    // Fetch all analytics endpoints in parallel
+    const [overview, messages, users] = await Promise.all([
+      $fetch<OverviewData>(
+        `${config.public.apiUrl}/api/dashboard/workspaces/${workspaceId}/analytics`,
+        { headers: { Authorization: `Bearer ${token.value}` } }
+      ),
+      $fetch<MessageStats[]>(
+        `${config.public.apiUrl}/api/dashboard/workspaces/${workspaceId}/analytics/messages`,
+        {
+          headers: { Authorization: `Bearer ${token.value}` },
+          query: { days }
+        }
+      ),
+      $fetch<UserStats[]>(
+        `${config.public.apiUrl}/api/dashboard/workspaces/${workspaceId}/analytics/users`,
+        {
+          headers: { Authorization: `Bearer ${token.value}` },
+          query: { days }
+        }
+      )
+    ])
+
+    overviewData.value = overview
+    messageStats.value = messages
+    userStats.value = users
+  } catch (e: unknown) {
+    const fetchError = e as { data?: { message?: string }; message?: string }
+    error.value = fetchError.data?.message || fetchError.message || 'Failed to load analytics'
+    toast.add({
+      title: 'Error',
+      description: error.value,
+      color: 'red',
+      icon: 'i-heroicons-exclamation-circle'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+// Refresh data
+const refreshData = () => {
+  fetchAnalytics()
+}
+
+// Watch for date range changes
+watch(dateRange, () => {
+  fetchAnalytics()
+})
+
+// Watch for workspace changes
+watch(() => currentWorkspace.value?.id, (newId) => {
+  if (newId) {
+    fetchAnalytics()
+  }
+})
+
+// Fetch data on mount
+onMounted(() => {
+  if (currentWorkspace.value?.id) {
+    fetchAnalytics()
+  }
+})
 </script>

@@ -218,8 +218,34 @@
               </div>
             </template>
 
+            <!-- Chat Type Tabs -->
+            <div class="mb-4">
+              <div class="chat-type-tabs">
+                <button
+                  v-for="chatType in chatTypes"
+                  :key="chatType.id"
+                  @click="selectedChatType = chatType.id"
+                  class="chat-type-tab"
+                  :class="{ active: selectedChatType === chatType.id }"
+                >
+                  <UIcon :name="chatType.icon" class="w-4 h-4" />
+                  <span>{{ chatType.label }}</span>
+                </button>
+              </div>
+
+              <!-- Chat Type Description -->
+              <div class="chat-type-description">
+                <p class="text-sm text-[var(--chat-text-secondary)]">
+                  {{ currentChatTypeDescription }}
+                </p>
+              </div>
+            </div>
+
             <div class="preview-wrapper">
-              <DashboardWidgetPreview :settings="widgetSettings" />
+              <DashboardWidgetPreview
+                :settings="widgetSettings"
+                :chat-type="selectedChatType"
+              />
             </div>
           </UCard>
         </div>
@@ -249,6 +275,44 @@ interface ThemePreset {
 }
 
 const { currentWorkspace } = useAuth()
+
+// Chat Type Definitions
+type ChatType = 'support' | 'user-to-user' | 'group'
+
+interface ChatTypeOption {
+  id: ChatType
+  label: string
+  icon: string
+  description: string
+}
+
+const chatTypes: ChatTypeOption[] = [
+  {
+    id: 'support',
+    label: 'Support',
+    icon: 'i-heroicons-lifebuoy',
+    description: 'Customer support chat for help desks and service teams. Customers can reach out to your support agents directly.'
+  },
+  {
+    id: 'user-to-user',
+    label: 'Direct Message',
+    icon: 'i-heroicons-user',
+    description: 'One-on-one private conversations between users. Ideal for marketplaces, social apps, and peer-to-peer communication.'
+  },
+  {
+    id: 'group',
+    label: 'Group Chat',
+    icon: 'i-heroicons-user-group',
+    description: 'Multi-user group conversations. Perfect for team collaboration, community discussions, and group messaging.'
+  }
+]
+
+const selectedChatType = ref<ChatType>('support')
+
+const currentChatTypeDescription = computed(() => {
+  const chatType = chatTypes.find(ct => ct.id === selectedChatType.value)
+  return chatType?.description || ''
+})
 
 // Widget Settings
 const widgetSettings = ref<WidgetSettings>({
@@ -444,10 +508,55 @@ onMounted(async () => {
 
 /* Preview Wrapper */
 .preview-wrapper {
-  height: calc(100vh - 200px);
-  min-height: 600px;
+  height: calc(100vh - 280px);
+  min-height: 500px;
   border: 1px solid var(--chat-bg-tertiary);
   border-radius: var(--chat-radius-md);
   overflow: hidden;
+}
+
+/* Chat Type Tabs */
+.chat-type-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--chat-bg-tertiary);
+  padding: 4px;
+  border-radius: var(--chat-radius-md);
+}
+
+.chat-type-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--chat-radius-sm);
+  background: transparent;
+  color: var(--chat-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chat-type-tab:hover {
+  color: var(--chat-text-primary);
+}
+
+.chat-type-tab.active {
+  background: var(--chat-bg-secondary);
+  color: var(--chat-text-primary);
+  box-shadow: var(--chat-shadow-sm);
+}
+
+/* Chat Type Description */
+.chat-type-description {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--chat-bg-tertiary);
+  border-radius: var(--chat-radius-sm);
+  border-left: 3px solid var(--chat-accent);
 }
 </style>

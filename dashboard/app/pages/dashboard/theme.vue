@@ -1,8 +1,27 @@
 <template>
   <div class="p-6 space-y-6">
-    <div>
-      <h1 class="text-3xl font-bold text-[var(--chat-text-primary)]">Theme</h1>
-      <p class="text-[var(--chat-text-secondary)] mt-1">Customize the appearance of your dashboard</p>
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-3xl font-bold text-[var(--chat-text-primary)]">Theme</h1>
+          <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle">Unsaved changes</UBadge>
+        </div>
+        <p class="text-[var(--chat-text-secondary)] mt-1">Customize the appearance of your dashboard</p>
+      </div>
+      <div v-if="loading" class="flex items-center gap-2 text-[var(--chat-text-secondary)]">
+        <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
+        <span>Loading...</span>
+      </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div v-if="saveSuccess" class="p-4 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-3">
+      <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
+      <span class="text-green-500">Theme saved successfully!</span>
+    </div>
+    <div v-if="saveError" class="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
+      <UIcon name="i-heroicons-exclamation-circle" class="w-5 h-5 text-red-500" />
+      <span class="text-red-500">{{ saveError }}</span>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -216,11 +235,11 @@
 
     <!-- Save Button -->
     <div class="flex justify-end gap-3">
-      <UButton variant="ghost" @click="resetTheme">
+      <UButton variant="ghost" @click="resetTheme" :disabled="saving || loading">
         Reset to Default
       </UButton>
-      <UButton color="primary" @click="saveTheme" :loading="saving">
-        Save Theme
+      <UButton color="primary" @click="saveTheme" :loading="saving" :disabled="loading || !hasUnsavedChanges">
+        {{ hasUnsavedChanges ? 'Save Theme' : 'Saved' }}
       </UButton>
     </div>
   </div>
@@ -231,16 +250,32 @@ definePageMeta({
   layout: 'dashboard'
 })
 
-const saving = ref(false)
+const config = useRuntimeConfig()
+const { token, currentWorkspace } = useAuth()
 
-const theme = ref({
+const saving = ref(false)
+const loading = ref(true)
+const saveSuccess = ref(false)
+const saveError = ref('')
+
+// Default theme values
+const defaultTheme = {
   colorScheme: 'default',
   accentColor: '#2563eb',
   fontFamily: 'Inter, system-ui, sans-serif',
   fontSize: 'base',
-  darkMode: false,
+  darkMode: true,
   compactMode: false,
   animations: true
+}
+
+const theme = ref({ ...defaultTheme })
+
+// Track original values to detect changes
+const originalTheme = ref({ ...defaultTheme })
+
+const hasUnsavedChanges = computed(() => {
+  return JSON.stringify(theme.value) !== JSON.stringify(originalTheme.value)
 })
 
 const colorSchemes = [
@@ -276,25 +311,126 @@ const fontSizeOptions = [
   { label: 'Large', value: 'lg' }
 ]
 
-const saveTheme = async () => {
-  saving.value = true
+// Map API response to frontend theme format
+const mapApiToTheme = (apiTheme: any) => {
+  return {
+    colorScheme: apiTheme?.preset || 'default',
+    accentColor: apiTheme?.primary_color || '#2563eb',
+    fontFamily: apiTheme?.font_family || 'Inter, system-ui, sans-serif',
+    fontSize: 'base', // Not stored in API, keep as local preference
+    darkMode: apiTheme?.dark_mode_enabled ?? true,
+    compactMode: false, // Not stored in API, keep as local preference
+    animations: true // Not stored in API, keep as local preference
+  }
+}
+
+// Map frontend theme to API format
+const mapThemeToApi = (themeData: typeof theme.value) => {
+  return {
+    preset: themeData.colorScheme === 'default' ? 'professional' : themeData.colorScheme,
+    primary_color: themeData.accentColor,
+    font_family: themeData.fontFamily,
+    dark_mode_enabled: themeData.darkMode
+  }
+}
+
+// Fetch theme from API
+const fetchTheme = async () => {
+  if (!currentWorkspace.value?.id) return
+
+  loading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    console.log('Theme saved:', theme.value)
+    const data = await $fetch(`${config.public.apiUrl}/api/dashboard/workspaces/${currentWorkspace.value.id}/theme`, {
+      headers: { Authorization: `Bearer ${token.value}` }
+    })
+    const mappedTheme = mapApiToTheme(data)
+    theme.value = mappedTheme
+    originalTheme.value = { ...mappedTheme }
+  } catch (e: any) {
+    console.error('Failed to fetch theme:', e)
+    saveError.value = 'Failed to load theme settings'
+  } finally {
+    loading.value = false
+  }
+}
+
+const saveTheme = async () => {
+  if (!currentWorkspace.value?.id) return
+
+  saving.value = true
+  saveError.value = ''
+  saveSuccess.value = false
+
+  try {
+    const apiData = mapThemeToApi(theme.value)
+    const data = await $fetch(`${config.public.apiUrl}/api/dashboard/workspaces/${currentWorkspace.value.id}/theme`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token.value}` },
+      body: apiData
+    })
+    const mappedTheme = mapApiToTheme(data)
+    theme.value = mappedTheme
+    originalTheme.value = { ...mappedTheme }
+    saveSuccess.value = true
+
+    // Hide success message after 3 seconds
+    setTimeout(() => {
+      saveSuccess.value = false
+    }, 3000)
+  } catch (e: any) {
+    console.error('Failed to save theme:', e)
+    saveError.value = e.data?.message || 'Failed to save theme settings'
   } finally {
     saving.value = false
   }
 }
 
-const resetTheme = () => {
-  theme.value = {
-    colorScheme: 'default',
-    accentColor: '#2563eb',
-    fontFamily: 'Inter, system-ui, sans-serif',
-    fontSize: 'base',
-    darkMode: false,
-    compactMode: false,
-    animations: true
+const resetTheme = async () => {
+  if (!currentWorkspace.value?.id) return
+
+  saving.value = true
+  saveError.value = ''
+
+  try {
+    // Reset to default values via API
+    const defaultApiData = {
+      preset: 'professional',
+      primary_color: '#2563eb',
+      font_family: 'Inter, system-ui, sans-serif',
+      dark_mode_enabled: true
+    }
+    const data = await $fetch(`${config.public.apiUrl}/api/dashboard/workspaces/${currentWorkspace.value.id}/theme`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token.value}` },
+      body: defaultApiData
+    })
+    const mappedTheme = mapApiToTheme(data)
+    theme.value = mappedTheme
+    originalTheme.value = { ...mappedTheme }
+    saveSuccess.value = true
+
+    setTimeout(() => {
+      saveSuccess.value = false
+    }, 3000)
+  } catch (e: any) {
+    console.error('Failed to reset theme:', e)
+    saveError.value = 'Failed to reset theme settings'
+  } finally {
+    saving.value = false
   }
 }
+
+// Watch for workspace changes and fetch theme
+watch(() => currentWorkspace.value?.id, (newId) => {
+  if (newId) {
+    fetchTheme()
+  }
+}, { immediate: true })
+
+// Warn user about unsaved changes before leaving
+onBeforeUnmount(() => {
+  if (hasUnsavedChanges.value && import.meta.client) {
+    // Could add a confirmation dialog here if needed
+  }
+})
 </script>

@@ -8,6 +8,7 @@ use App\Models\ChatUser;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -15,12 +16,87 @@ class UserController extends Controller
     {
         $workspace = $this->getWorkspace($request, $id);
 
-        $users = ChatUser::where('workspace_id', $workspace->id)
-            ->withCount('conversations')
-            ->orderByDesc('last_seen_at')
-            ->paginate(20);
+        $perPage = min($request->input('per_page', 20), 100);
+        $search = $request->input('search');
+        $status = $request->input('status');
+        $type = $request->input('type');
 
-        return response()->json($users);
+        $query = ChatUser::where('workspace_id', $workspace->id)
+            ->withCount('conversations')
+            ->with(['ban' => function ($q) {
+                $q->where(function ($query) {
+                    $query->whereNull('expires_at')
+                          ->orWhere('expires_at', '>', now());
+                });
+            }]);
+
+        // Search filter (use LOWER for case-insensitive search across databases)
+        if ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function ($q) use ($searchLower) {
+                $q->whereRaw('LOWER(name) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(email) LIKE ?', ["%{$searchLower}%"]);
+            });
+        }
+
+        // Status filter (online, active, inactive)
+        if ($status) {
+            $now = Carbon::now();
+            switch ($status) {
+                case 'online':
+                    $query->where('last_seen_at', '>', $now->copy()->subMinutes(5));
+                    break;
+                case 'active':
+                    $query->where('last_seen_at', '>', $now->copy()->subHours(24))
+                          ->where('last_seen_at', '<=', $now->copy()->subMinutes(5));
+                    break;
+                case 'inactive':
+                    $query->where(function ($q) use ($now) {
+                        $q->whereNull('last_seen_at')
+                          ->orWhere('last_seen_at', '<=', $now->copy()->subHours(24));
+                    });
+                    break;
+            }
+        }
+
+        // Type filter (anonymous, registered)
+        if ($type) {
+            $query->where('is_anonymous', $type === 'anonymous');
+        }
+
+        $users = $query->orderByDesc('last_seen_at')->paginate($perPage);
+
+        // Calculate stats
+        $fiveMinutesAgo = Carbon::now()->subMinutes(5);
+        $twentyFourHoursAgo = Carbon::now()->subHours(24);
+
+        $totalUsers = ChatUser::where('workspace_id', $workspace->id)->count();
+        $onlineUsers = ChatUser::where('workspace_id', $workspace->id)
+            ->where('last_seen_at', '>', $fiveMinutesAgo)
+            ->count();
+        $activeToday = ChatUser::where('workspace_id', $workspace->id)
+            ->where('last_seen_at', '>', $twentyFourHoursAgo)
+            ->count();
+        $anonymousUsers = ChatUser::where('workspace_id', $workspace->id)
+            ->where('is_anonymous', true)
+            ->count();
+        $bannedUsers = Ban::where('workspace_id', $workspace->id)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
+            })
+            ->count();
+
+        return response()->json([
+            'users' => $users,
+            'stats' => [
+                'total_users' => $totalUsers,
+                'online_users' => $onlineUsers,
+                'active_today' => $activeToday,
+                'anonymous_users' => $anonymousUsers,
+                'banned_users' => $bannedUsers,
+            ],
+        ]);
     }
 
     public function ban(Request $request, string $id, string $userId): JsonResponse
