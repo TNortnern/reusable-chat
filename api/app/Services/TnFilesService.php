@@ -56,8 +56,8 @@ class TnFilesService
             if ($response->successful()) {
                 $data = $response->json();
 
-                // tn-files returns array of uploaded files
-                $uploadedFile = $data['files'][0] ?? null;
+                // tn-files returns results array with uploaded files
+                $uploadedFile = $data['results'][0] ?? null;
 
                 if ($uploadedFile) {
                     return [
