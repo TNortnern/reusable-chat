@@ -56,9 +56,6 @@ class TnFilesService
             if ($response->successful()) {
                 $data = $response->json();
 
-                // Log raw response for debugging
-                \Log::info('TnFiles response', ['data' => $data]);
-
                 // tn-files returns results array with uploaded files
                 $uploadedFile = $data['results'][0] ?? null;
 

@@ -49,14 +49,22 @@ class Attachment extends Model
         return $this->belongsTo(ChatUser::class);
     }
 
-    // Accessor for URL - use new path if available, fallback to legacy url
+    // Accessor for URL - prefer stored URL (from tn-files), fallback to computed
     public function getComputedUrlAttribute(): string
     {
+        // If we have a stored URL (e.g., from tn-files), use it directly
+        $storedUrl = $this->attributes['url'] ?? null;
+        if ($storedUrl && str_starts_with($storedUrl, 'http')) {
+            return $storedUrl;
+        }
+
+        // Otherwise compute from path
         if ($this->path) {
             $disk = env('BUNNY_STORAGE_ENABLED') ? 'bunny' : 'public';
             return Storage::disk($disk)->url($this->path);
         }
-        return $this->attributes['url'] ?? '';
+
+        return '';
     }
 
     // Accessor for name - use new name if available, fallback to legacy filename
