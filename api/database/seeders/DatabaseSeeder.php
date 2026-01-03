@@ -24,5 +24,11 @@ class DatabaseSeeder extends Seeder
 
         // Run demo seeder
         $this->call(DemoSeeder::class);
+
+        // Run admin seeder
+        $this->call(AdminSeeder::class);
+
+        // Run mywatercloset seeder
+        $this->call(MywaterclosetSeeder::class);
     }
 }

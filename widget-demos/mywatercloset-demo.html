@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyWaterCloset - Chat Widget Demos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #0c4a6e;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .demo-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-card-header {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .demo-card-header h2 {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+
+        .demo-card-header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .demo-card-body {
+            padding: 20px;
+        }
+
+        .demo-preview {
+            background: #f8fafc;
+            border-radius: 12px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 15px;
+            border: 2px dashed #e2e8f0;
+        }
+
+        .demo-preview-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .config-section {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .config-section h4 {
+            color: #334155;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .config-item:last-child {
+            border-bottom: none;
+        }
+
+        .config-key {
+            color: #64748b;
+        }
+
+        .config-value {
+            color: #0ea5e9;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+        }
+
+        .code-block .comment {
+            color: #64748b;
+        }
+
+        .code-block .attr {
+            color: #7dd3fc;
+        }
+
+        .code-block .value {
+            color: #86efac;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-support { background: #dbeafe; color: #1d4ed8; }
+        .badge-dm { background: #fce7f3; color: #be185d; }
+        .badge-group { background: #d1fae5; color: #047857; }
+        .badge-minimal { background: #f3f4f6; color: #374151; }
+
+        .use-cases {
+            margin-top: 15px;
+        }
+
+        .use-case {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .use-case::before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+            max-width: 1200px;
+            margin: 40px auto 0;
+        }
+
+        .footer a {
+            color: #0ea5e9;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Active widget indicator */
+        .widget-active-indicator {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>MyWaterCloset Chat Widget Demos</h1>
+        <p>Testing different widget configurations for marketplace chat integration</p>
+    </header>
+
+    <div class="demo-grid">
+        <!-- Demo 1: Customer Support Widget -->
+        <div class="demo-card">
+            <div class="demo-card-header">
+                <span class="badge badge-support">Support Chat</span>
+                <h2>Customer Support Widget</h2>
+                <p>Help desk for customer inquiries</p>
+            </div>
+            <div class="demo-card-body">
+                <div class="demo-preview">
+                    <span class="demo-preview-label">Widget appears bottom-right</span>
+                </div>
+
+                <div class="config-section">
+                    <h4>Configuration</h4>
+                    <div class="config-item">
+                        <span class="config-key">Position</span>
+                        <span class="config-value">bottom-right</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Title</span>
+                        <span class="config-value">"Need Help?"</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Subtitle</span>
+                        <span class="config-value">"We're here to help!"</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Welcome Message</span>
+                        <span class="config-value">Auto greeting</span>
+                    </div>
+                </div>
+
+                <div class="use-cases">
+                    <div class="use-case">Product questions</div>
+                    <div class="use-case">Order support</div>
+                    <div class="use-case">Returns & refunds</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo 2: User-to-User Messaging -->
+        <div class="demo-card">
+            <div class="demo-card-header" style="background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);">
+                <span class="badge badge-dm">Direct Message</span>
+                <h2>Buyer-Seller Chat</h2>
+                <p>Private messaging between marketplace users</p>
+            </div>
+            <div class="demo-card-body">
+                <div class="demo-preview">
+                    <span class="demo-preview-label">Widget appears bottom-left</span>
+                </div>
+
+                <div class="config-section">
+                    <h4>Configuration</h4>
+                    <div class="config-item">
+                        <span class="config-key">Position</span>
+                        <span class="config-value">bottom-left</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Title</span>
+                        <span class="config-value">"Messages"</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Auth Required</span>
+                        <span class="config-value">user-token</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">File Uploads</span>
+                        <span class="config-value">enabled</span>
+                    </div>
+                </div>
+
+                <div class="use-cases">
+                    <div class="use-case">Negotiate prices</div>
+                    <div class="use-case">Ask about products</div>
+                    <div class="use-case">Coordinate delivery</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo 3: Group Chat -->
+        <div class="demo-card">
+            <div class="demo-card-header" style="background: linear-gradient(135deg, #10b981 0%, #047857 100%);">
+                <span class="badge badge-group">Group Chat</span>
+                <h2>Community Discussion</h2>
+                <p>Multi-user group conversations</p>
+            </div>
+            <div class="demo-card-body">
+                <div class="demo-preview">
+                    <span class="demo-preview-label">Embedded in page</span>
+                </div>
+
+                <div class="config-section">
+                    <h4>Configuration</h4>
+                    <div class="config-item">
+                        <span class="config-key">Type</span>
+                        <span class="config-value">embedded</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Title</span>
+                        <span class="config-value">"Bathroom Reno Group"</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Max Participants</span>
+                        <span class="config-value">50</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Notifications</span>
+                        <span class="config-value">@mentions only</span>
+                    </div>
+                </div>
+
+                <div class="use-cases">
+                    <div class="use-case">Community forums</div>
+                    <div class="use-case">Project collaboration</div>
+                    <div class="use-case">Expert Q&A sessions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo 4: Minimal/Popup Widget -->
+        <div class="demo-card">
+            <div class="demo-card-header" style="background: linear-gradient(135deg, #64748b 0%, #334155 100%);">
+                <span class="badge badge-minimal">Minimal</span>
+                <h2>Quick Contact</h2>
+                <p>Lightweight popup for quick inquiries</p>
+            </div>
+            <div class="demo-card-body">
+                <div class="demo-preview">
+                    <span class="demo-preview-label">Minimal button only</span>
+                </div>
+
+                <div class="config-section">
+                    <h4>Configuration</h4>
+                    <div class="config-item">
+                        <span class="config-key">Mode</span>
+                        <span class="config-value">minimal</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Position</span>
+                        <span class="config-value">bottom-right</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Auto-open</span>
+                        <span class="config-value">after 30s</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-key">Sound</span>
+                        <span class="config-value">disabled</span>
+                    </div>
+                </div>
+
+                <div class="use-cases">
+                    <div class="use-case">Quick questions</div>
+                    <div class="use-case">Lead capture</div>
+                    <div class="use-case">Feedback collection</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Embed Code Examples Section -->
+    <div style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
+        <div class="demo-card">
+            <div class="demo-card-header">
+                <h2>Embed Code Examples</h2>
+                <p>Copy-paste ready code for each configuration</p>
+            </div>
+            <div class="demo-card-body">
+                <h3 style="margin-bottom: 15px; color: #334155;">1. Customer Support Widget</h3>
+                <div class="code-block">
+<span class="comment">&lt;!-- MyWaterCloset Support Chat --&gt;</span>
+&lt;script
+  <span class="attr">src</span>=<span class="value">"https://hastets.b-cdn.net/widget/widget.iife.js"</span>
+  <span class="attr">data-workspace-id</span>=<span class="value">"mywatercloset"</span>
+  <span class="attr">data-api-url</span>=<span class="value">"https://api-production-de24c.up.railway.app"</span>
+  <span class="attr">data-ws-host</span>=<span class="value">"api-production-de24c.up.railway.app"</span>
+  <span class="attr">data-ws-key</span>=<span class="value">"reusable-chat-key"</span>
+  <span class="attr">data-position</span>=<span class="value">"bottom-right"</span>
+  <span class="attr">data-title</span>=<span class="value">"Need Help?"</span>
+  <span class="attr">data-subtitle</span>=<span class="value">"We're here to help!"</span>
+  <span class="attr">data-welcome-message</span>=<span class="value">"Welcome to MyWaterCloset! How can we help you today?"</span>
+&gt;&lt;/script&gt;
+                </div>
+
+                <h3 style="margin: 25px 0 15px; color: #334155;">2. Authenticated User Chat (Buyer-Seller)</h3>
+                <div class="code-block">
+<span class="comment">&lt;!-- MyWaterCloset Messaging (requires backend session) --&gt;</span>
+&lt;script
+  <span class="attr">src</span>=<span class="value">"https://hastets.b-cdn.net/widget/widget.iife.js"</span>
+  <span class="attr">data-workspace-id</span>=<span class="value">"mywatercloset"</span>
+  <span class="attr">data-api-url</span>=<span class="value">"https://api-production-de24c.up.railway.app"</span>
+  <span class="attr">data-ws-host</span>=<span class="value">"api-production-de24c.up.railway.app"</span>
+  <span class="attr">data-ws-key</span>=<span class="value">"reusable-chat-key"</span>
+  <span class="attr">data-position</span>=<span class="value">"bottom-left"</span>
+  <span class="attr">data-title</span>=<span class="value">"Messages"</span>
+  <span class="attr">data-user-token</span>=<span class="value">"{{ $chatSession['token'] }}"</span>
+  <span class="attr">data-user-id</span>=<span class="value">"{{ auth()->id() }}"</span>
+&gt;&lt;/script&gt;
+                </div>
+
+                <h3 style="margin: 25px 0 15px; color: #334155;">3. Web Component Syntax</h3>
+                <div class="code-block">
+<span class="comment">&lt;!-- Using Web Component --&gt;</span>
+&lt;script <span class="attr">src</span>=<span class="value">"https://hastets.b-cdn.net/widget/widget.iife.js"</span>&gt;&lt;/script&gt;
+
+&lt;chat-widget
+  <span class="attr">workspace-id</span>=<span class="value">"mywatercloset"</span>
+  <span class="attr">api-url</span>=<span class="value">"https://api-production-de24c.up.railway.app"</span>
+  <span class="attr">ws-host</span>=<span class="value">"api-production-de24c.up.railway.app"</span>
+  <span class="attr">ws-key</span>=<span class="value">"reusable-chat-key"</span>
+  <span class="attr">position</span>=<span class="value">"bottom-right"</span>
+  <span class="attr">title</span>=<span class="value">"MyWaterCloset Support"</span>
+&gt;&lt;/chat-widget&gt;
+                </div>
+
+                <h3 style="margin: 25px 0 15px; color: #334155;">4. JavaScript API</h3>
+                <div class="code-block">
+<span class="comment">// Programmatic widget control</span>
+&lt;script <span class="attr">src</span>=<span class="value">"https://hastets.b-cdn.net/widget/widget.iife.js"</span>&gt;&lt;/script&gt;
+
+&lt;script&gt;
+const widget = new window.ChatWidget({
+  workspaceId: <span class="value">'mywatercloset'</span>,
+  apiUrl: <span class="value">'https://api-production-de24c.up.railway.app'</span>,
+  wsHost: <span class="value">'api-production-de24c.up.railway.app'</span>,
+  wsKey: <span class="value">'reusable-chat-key'</span>,
+  position: <span class="value">'bottom-right'</span>,
+  title: <span class="value">'Chat Support'</span>,
+});
+
+<span class="comment">// Initialize when ready</span>
+widget.init();
+
+<span class="comment">// Open chat programmatically</span>
+document.getElementById('contact-btn').onclick = () =&gt; {
+  window.chatWidget.open();
+};
+&lt;/script&gt;
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>
+            <strong>MyWaterCloset Chat Integration</strong><br>
+            Powered by <a href="https://dashboard-production-8985.up.railway.app" target="_blank">Reusable Chat</a>
+        </p>
+        <p style="margin-top: 10px; font-size: 0.9rem;">
+            API Key: <code style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">sk_mwc_live_...</code> |
+            <a href="https://dashboard-production-8985.up.railway.app/dashboard" target="_blank">Dashboard</a> |
+            <a href="/docs/WIDGET_EMBED.md" target="_blank">Documentation</a>
+        </p>
+    </footer>
+
+    <!-- Active Widget (Customer Support) -->
+    <div class="widget-active-indicator">
+        Widget Active
+    </div>
+
+    <!-- Load the actual widget for demo -->
+    <script
+        src="https://hastets.b-cdn.net/widget/widget.iife.js"
+        data-workspace-id="demo"
+        data-api-url="https://api-production-de24c.up.railway.app"
+        data-ws-host="api-production-de24c.up.railway.app"
+        data-ws-key="reusable-chat-key"
+        data-position="bottom-right"
+        data-title="MyWaterCloset Support"
+        data-subtitle="We typically reply in minutes"
+        data-welcome-message="Welcome to MyWaterCloset! How can we help you today?"
+    ></script>
+</body>
+</html>
