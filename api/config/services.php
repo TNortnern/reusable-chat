@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'tn_files' => [
+        'base_url' => env('TN_FILES_BASE_URL', 'https://tn-files.up.railway.app'),
+        'api_key' => env('TN_FILES_API_KEY'),
+        'cdn_url' => env('TN_FILES_CDN_URL', 'https://hastets.b-cdn.net'),
+    ],
+
 ];
