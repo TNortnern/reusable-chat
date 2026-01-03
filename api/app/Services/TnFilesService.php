@@ -56,13 +56,16 @@ class TnFilesService
             if ($response->successful()) {
                 $data = $response->json();
 
+                // Log raw response for debugging
+                \Log::info('TnFiles response', ['data' => $data]);
+
                 // tn-files returns results array with uploaded files
                 $uploadedFile = $data['results'][0] ?? null;
 
-                if ($uploadedFile) {
+                if ($uploadedFile && $uploadedFile['success']) {
                     return [
                         'success' => true,
-                        'url' => $uploadedFile['url'] ?? "{$this->cdnUrl}/{$uploadPath}{$filename}",
+                        'url' => $uploadedFile['url'],
                         'filename' => $filename,
                         'original_name' => $file->getClientOriginalName(),
                         'size' => $file->getSize(),
