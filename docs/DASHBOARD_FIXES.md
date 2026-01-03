@@ -275,8 +275,16 @@ Required test files:
 - [ ] `ConversationControllerTest.php` - Conversation management (lower priority)
 
 ### Browser Testing Checklist
-Test URL: http://localhost:3000/dashboard (or production URL)
+Test URL: https://dashboard-production-8985.up.railway.app
 
+**Tested 2026-01-03:**
+- [x] Demo page loads
+- [x] Chat room creation works
+- [x] WebSocket connected (real-time events flowing)
+- [x] Messages send and display correctly
+- [x] File upload → CDN working (hastets.b-cdn.net)
+
+**Dashboard (requires login):**
 - [ ] Login to dashboard
 - [ ] Navigate to Settings > API Keys
   - [ ] Create new API key

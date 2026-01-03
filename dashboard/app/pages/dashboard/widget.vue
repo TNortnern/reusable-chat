@@ -150,6 +150,7 @@
                 <UInput
                   v-model="widgetSettings.logoUrl"
                   placeholder="https://example.com/logo.png"
+                  class="w-full"
                 />
                 <p class="text-xs text-[var(--chat-text-secondary)] mt-1">
                   Recommended: Square image, at least 80x80px
@@ -212,9 +213,19 @@
                 <h2 class="text-lg font-semibold text-[var(--chat-text-primary)]">
                   Live Preview
                 </h2>
-                <UBadge color="green" variant="subtle">
-                  Real-time
-                </UBadge>
+                <div class="flex items-center gap-2">
+                  <UButton
+                    icon="i-heroicons-arrow-top-right-on-square"
+                    size="xs"
+                    variant="ghost"
+                    @click="openLivePreview"
+                  >
+                    Open Demo
+                  </UButton>
+                  <UBadge color="green" variant="subtle">
+                    Real-time
+                  </UBadge>
+                </div>
               </div>
             </template>
 
@@ -361,25 +372,37 @@ const themePresets: ThemePreset[] = [
   },
 ]
 
-// Options
-const positionOptions = [
-  { label: 'Bottom Right', value: 'bottom-right' },
-  { label: 'Bottom Left', value: 'bottom-left' },
-]
+// Options - NuxtUI v3 format (array of strings or objects with id/label)
+const positionOptions = ['bottom-right', 'bottom-left']
 
 const fontOptions = [
-  { label: 'Inter (Default)', value: 'Inter, system-ui, sans-serif' },
-  { label: 'Satoshi', value: 'Satoshi, system-ui, sans-serif' },
-  { label: 'System UI', value: 'system-ui, sans-serif' },
-  { label: 'Arial', value: 'Arial, sans-serif' },
-  { label: 'Georgia', value: 'Georgia, serif' },
-  { label: 'Monospace', value: 'monospace' },
+  'Inter, system-ui, sans-serif',
+  'Satoshi, system-ui, sans-serif',
+  'system-ui, sans-serif',
+  'Arial, sans-serif',
+  'Georgia, serif',
+  'monospace',
 ]
+
+// Runtime config
+const config = useRuntimeConfig()
+const apiUrl = config.public.apiUrl || 'https://api-production-de24c.up.railway.app'
+const wsHost = config.public.reverbHost || 'api-production-de24c.up.railway.app'
+const wsKey = config.public.reverbKey || 'reusable-chat-key'
 
 // Embed Code
 const embedCode = computed(() => {
   const workspaceId = currentWorkspace.value?.id || 'YOUR_WORKSPACE_ID'
-  return `<script src="https://cdn.chatplatform.com/widget.js" data-workspace="${workspaceId}"><\/script>`
+  return `<!-- Reusable Chat Widget -->
+<script
+  src="https://hastets.b-cdn.net/widget/widget.iife.js"
+  data-workspace-id="${workspaceId}"
+  data-api-url="${apiUrl}"
+  data-ws-host="${wsHost}"
+  data-ws-key="${wsKey}"
+  data-position="${widgetSettings.value.position}"
+  data-title="Chat with us"
+><\/script>`
 })
 
 // Copy to clipboard
@@ -421,6 +444,13 @@ const resetSettings = () => {
     fontFamily: 'Inter, system-ui, sans-serif',
   }
   currentPreset.value = 'minimal'
+}
+
+// Open live preview in new tab
+const openLivePreview = () => {
+  // Open the demo page in a new tab
+  const demoUrl = '/demo'
+  window.open(demoUrl, '_blank')
 }
 
 // Load saved settings on mount
