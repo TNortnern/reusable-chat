@@ -14,7 +14,11 @@ class Conversation extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['workspace_id', 'type', 'name', 'created_by'];
+    protected $fillable = ['workspace_id', 'type', 'name', 'created_by', 'metadata'];
+
+    protected $casts = [
+        'metadata' => 'array',
+    ];
 
     public function workspace(): BelongsTo
     {

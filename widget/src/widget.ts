@@ -3,11 +3,15 @@ interface WidgetConfig {
   userToken?: string
   position?: 'bottom-right' | 'bottom-left'
   theme?: 'light' | 'dark' | 'auto'
+  mode?: 'floating' | 'embedded'
+  container?: string | HTMLElement
+  conversationId?: string
 }
 
 class ChatWidgetManager {
   private iframe: HTMLIFrameElement | null = null
   private container: HTMLDivElement | null = null
+  private launcher: HTMLButtonElement | null = null
   private config: WidgetConfig
   private isOpen = false
   private baseUrl: string
@@ -16,15 +20,51 @@ class ChatWidgetManager {
     this.config = {
       position: 'bottom-right',
       theme: 'auto',
+      mode: 'floating',
       ...config
     }
     this.baseUrl = (window as any).__CHAT_WIDGET_URL__ || 'http://localhost:3020'
   }
 
   init() {
+    if (this.config.mode === 'embedded') {
+      this.initEmbedded()
+    } else {
+      this.initFloating()
+    }
+    this.setupMessageListener()
+  }
+
+  private initFloating() {
     this.createContainer()
     this.createLauncher()
-    this.setupMessageListener()
+  }
+
+  private initEmbedded() {
+    // Get or create container
+    let targetContainer: HTMLElement | null = null
+    if (this.config.container) {
+      if (typeof this.config.container === 'string') {
+        targetContainer = document.querySelector(this.config.container)
+      } else {
+        targetContainer = this.config.container
+      }
+    }
+
+    if (!targetContainer) {
+      console.error('[ChatWidget] Embedded mode requires a valid container')
+      return
+    }
+
+    // Style the container for embedded mode
+    targetContainer.style.position = 'relative'
+    targetContainer.style.width = '100%'
+    targetContainer.style.height = '100%'
+
+    this.container = targetContainer as HTMLDivElement
+
+    // Create and show iframe immediately in embedded mode
+    this.createEmbeddedIframe()
   }
 
   private createContainer() {
@@ -41,14 +81,14 @@ class ChatWidgetManager {
   }
 
   private createLauncher() {
-    const launcher = document.createElement('button')
-    launcher.id = 'chat-widget-launcher'
-    launcher.innerHTML = `
+    this.launcher = document.createElement('button')
+    this.launcher.id = 'chat-widget-launcher'
+    this.launcher.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
       </svg>
     `
-    launcher.style.cssText = `
+    this.launcher.style.cssText = `
       width: 56px;
       height: 56px;
       border-radius: 50%;
@@ -62,26 +102,36 @@ class ChatWidgetManager {
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       transition: transform 0.2s, box-shadow 0.2s;
     `
-    launcher.addEventListener('click', () => this.toggle())
-    launcher.addEventListener('mouseenter', () => {
-      launcher.style.transform = 'scale(1.05)'
-      launcher.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)'
+    this.launcher.addEventListener('click', () => this.toggle())
+    this.launcher.addEventListener('mouseenter', () => {
+      this.launcher!.style.transform = 'scale(1.05)'
+      this.launcher!.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)'
     })
-    launcher.addEventListener('mouseleave', () => {
-      launcher.style.transform = 'scale(1)'
-      launcher.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
+    this.launcher.addEventListener('mouseleave', () => {
+      this.launcher!.style.transform = 'scale(1)'
+      this.launcher!.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
     })
-    this.container!.appendChild(launcher)
+    this.container!.appendChild(this.launcher)
+  }
+
+  private getIframeParams(): URLSearchParams {
+    const params: Record<string, string> = {
+      workspace: this.config.workspace,
+      theme: this.config.theme || 'auto',
+    }
+    if (this.config.userToken) {
+      params.token = this.config.userToken
+    }
+    if (this.config.conversationId) {
+      params.conversation = this.config.conversationId
+    }
+    return new URLSearchParams(params)
   }
 
   private createIframe() {
     if (this.iframe) return
 
-    const params = new URLSearchParams({
-      workspace: this.config.workspace,
-      theme: this.config.theme || 'auto',
-      ...(this.config.userToken && { token: this.config.userToken })
-    })
+    const params = this.getIframeParams()
 
     this.iframe = document.createElement('iframe')
     this.iframe.src = `${this.baseUrl}/widget?${params.toString()}`
@@ -98,6 +148,25 @@ class ChatWidgetManager {
       background: white;
     `
     this.container!.appendChild(this.iframe)
+  }
+
+  private createEmbeddedIframe() {
+    if (this.iframe) return
+
+    const params = this.getIframeParams()
+
+    this.iframe = document.createElement('iframe')
+    this.iframe.src = `${this.baseUrl}/widget?${params.toString()}`
+    this.iframe.style.cssText = `
+      width: 100%;
+      height: 100%;
+      min-height: 500px;
+      border: none;
+      border-radius: 12px;
+      background: white;
+    `
+    this.container!.appendChild(this.iframe)
+    this.isOpen = true
   }
 
   private setupMessageListener() {
@@ -148,6 +217,57 @@ class ChatWidgetManager {
       this.dispatchEvent('close', {})
     }
   }
+
+  // Show/hide the floating launcher button
+  showLauncher() {
+    if (this.launcher) {
+      this.launcher.style.display = 'flex'
+    }
+  }
+
+  hideLauncher() {
+    if (this.launcher) {
+      this.launcher.style.display = 'none'
+    }
+  }
+
+  // Navigate to a specific conversation
+  openConversation(conversationId: string) {
+    this.config.conversationId = conversationId
+    if (this.iframe) {
+      // Post message to iframe to navigate
+      this.iframe.contentWindow?.postMessage({
+        type: 'chat:navigate',
+        data: { conversationId }
+      }, this.baseUrl)
+    }
+    if (!this.isOpen) {
+      this.open()
+    }
+  }
+
+  // Update user token (e.g., after login)
+  setUserToken(token: string) {
+    this.config.userToken = token
+    if (this.iframe) {
+      this.iframe.contentWindow?.postMessage({
+        type: 'chat:setToken',
+        data: { token }
+      }, this.baseUrl)
+    }
+  }
+
+  // Destroy the widget
+  destroy() {
+    if (this.container && this.config.mode === 'floating') {
+      this.container.remove()
+    } else if (this.iframe) {
+      this.iframe.remove()
+    }
+    this.iframe = null
+    this.container = null
+    this.launcher = null
+  }
 }
 
 // Web Component
@@ -155,7 +275,7 @@ class ChatWidgetElement extends HTMLElement {
   private widget: ChatWidgetManager | null = null
 
   static get observedAttributes() {
-    return ['workspace', 'user-token', 'position', 'theme']
+    return ['workspace', 'user-token', 'position', 'theme', 'mode', 'container', 'conversation-id']
   }
 
   connectedCallback() {
@@ -164,9 +284,16 @@ class ChatWidgetElement extends HTMLElement {
       userToken: this.getAttribute('user-token') || undefined,
       position: (this.getAttribute('position') as 'bottom-right' | 'bottom-left') || 'bottom-right',
       theme: (this.getAttribute('theme') as 'light' | 'dark' | 'auto') || 'auto',
+      mode: (this.getAttribute('mode') as 'floating' | 'embedded') || 'floating',
+      container: this.getAttribute('container') || undefined,
+      conversationId: this.getAttribute('conversation-id') || undefined,
     }
     this.widget = new ChatWidgetManager(config)
     this.widget.init()
+  }
+
+  disconnectedCallback() {
+    this.widget?.destroy()
   }
 
   open() {
@@ -179,6 +306,22 @@ class ChatWidgetElement extends HTMLElement {
 
   toggle() {
     this.widget?.toggle()
+  }
+
+  showLauncher() {
+    this.widget?.showLauncher()
+  }
+
+  hideLauncher() {
+    this.widget?.hideLauncher()
+  }
+
+  openConversation(conversationId: string) {
+    this.widget?.openConversation(conversationId)
+  }
+
+  setUserToken(token: string) {
+    this.widget?.setUserToken(token)
   }
 }
 

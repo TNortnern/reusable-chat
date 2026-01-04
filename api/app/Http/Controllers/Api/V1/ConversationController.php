@@ -42,6 +42,7 @@ class ConversationController extends Controller
             'participant_ids' => 'required|array|min:2',
             'participant_ids.*' => 'uuid',
             'name' => 'nullable|string|max:255', // for group chats
+            'metadata' => 'nullable|array', // custom data (e.g., property_id, booking_id)
         ]);
 
         $workspace = $request->workspace;
@@ -76,6 +77,7 @@ class ConversationController extends Controller
             'workspace_id' => $workspace->id,
             'type' => $validated['type'],
             'name' => $validated['name'] ?? null,
+            'metadata' => $validated['metadata'] ?? null,
         ]);
 
         foreach ($validated['participant_ids'] as $userId) {
@@ -86,6 +88,33 @@ class ConversationController extends Controller
         }
 
         return response()->json($conversation->load('participants'), 201);
+    }
+
+    public function unreadCount(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|uuid',
+        ]);
+
+        $workspace = $request->workspace;
+        $user = ChatUser::where('workspace_id', $workspace->id)
+            ->where('id', $validated['user_id'])
+            ->firstOrFail();
+
+        // Count conversations with unread messages
+        $unreadCount = Conversation::where('workspace_id', $workspace->id)
+            ->whereHas('participants', function ($query) use ($user) {
+                $query->where('chat_user_id', $user->id);
+            })
+            ->whereHas('messages', function ($query) use ($user) {
+                $query->where('sender_id', '!=', $user->id)
+                    ->whereDoesntHave('readReceipts', function ($q) use ($user) {
+                        $q->where('chat_user_id', $user->id);
+                    });
+            })
+            ->count();
+
+        return response()->json(['unread_count' => $unreadCount]);
     }
 
     public function addParticipant(Request $request, string $id): JsonResponse
