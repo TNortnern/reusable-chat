@@ -43,6 +43,26 @@
       </div>
     </div>
 
+    <!-- Image Lightbox Modal -->
+    <Teleport to="body">
+      <Transition name="lightbox">
+        <div v-if="lightboxImage" class="lightbox-overlay" @click="closeLightbox">
+          <div class="lightbox-content" @click.stop>
+            <button class="lightbox-close" @click="closeLightbox">&times;</button>
+            <img :src="lightboxImage.url" :alt="lightboxImage.name || 'Image'" class="lightbox-image" />
+            <div v-if="lightboxImage.name" class="lightbox-caption">{{ lightboxImage.name }}</div>
+            <a :href="lightboxImage.url" download class="lightbox-download" title="Download">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- Chat Screen -->
     <div v-else class="chat-screen">
       <div class="chat-header">
@@ -85,7 +105,7 @@
             <div class="message-text">{{ msg.content }}</div>
             <div v-if="msg.attachments && msg.attachments.length > 0" class="message-attachments">
               <div v-for="attachment in msg.attachments" :key="attachment.id" class="attachment">
-                <img v-if="attachment.type.startsWith('image/')" :src="attachment.url" :alt="attachment.name" class="attachment-image" @click="openImage(attachment.url)" />
+                <img v-if="attachment.type.startsWith('image/')" :src="attachment.url" :alt="attachment.name" class="attachment-image" @click="openImage(attachment.url, attachment.name)" />
                 <a v-else :href="attachment.url" target="_blank" class="attachment-file">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -160,6 +180,16 @@
             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
           </svg>
         </button>
+      </div>
+
+      <!-- Branding Badge -->
+      <div class="powered-by">
+        <a href="https://github.com/TNortnern/reusable-chat" target="_blank" rel="noopener noreferrer" class="powered-by-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          Powered by <strong>Reusable Chat</strong>
+        </a>
       </div>
     </div>
   </div>
@@ -240,6 +270,9 @@ const commonEmojis = [
 // File upload
 const fileInput = ref<HTMLInputElement | null>(null)
 const pendingFiles = ref<PendingFile[]>([])
+
+// Lightbox for image viewing
+const lightboxImage = ref<{ url: string; name?: string } | null>(null)
 
 let typingTimeout: ReturnType<typeof setTimeout>
 let echoChannel: any = null
@@ -746,8 +779,21 @@ const uploadFiles = async (): Promise<Attachment[]> => {
   return attachments
 }
 
-const openImage = (url: string) => {
-  window.open(url, '_blank')
+const openImage = (url: string, name?: string) => {
+  lightboxImage.value = { url, name }
+}
+
+const closeLightbox = () => {
+  lightboxImage.value = null
+}
+
+// Handle escape key to close lightbox
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && lightboxImage.value) {
+      closeLightbox()
+    }
+  })
 }
 
 const scrollToBottom = () => {
@@ -1285,5 +1331,140 @@ onUnmounted(() => {
 
 .message.own .attachment-file:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Powered By Badge */
+.powered-by {
+  padding: 8px 20px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.powered-by-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.powered-by-link:hover {
+  color: #667eea;
+}
+
+.powered-by-link strong {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.powered-by-link:hover strong {
+  color: #667eea;
+}
+
+/* Lightbox Modal */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: -40px;
+  right: -10px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lightbox-caption {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightbox-download {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 20px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.lightbox-download:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Lightbox transitions */
+.lightbox-enter-active,
+.lightbox-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.lightbox-enter-from,
+.lightbox-leave-to {
+  opacity: 0;
+}
+
+.lightbox-enter-active .lightbox-content,
+.lightbox-leave-active .lightbox-content {
+  transition: transform 0.2s ease;
+}
+
+.lightbox-enter-from .lightbox-content,
+.lightbox-leave-to .lightbox-content {
+  transform: scale(0.95);
 }
 </style>
