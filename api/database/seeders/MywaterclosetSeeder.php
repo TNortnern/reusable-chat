@@ -24,31 +24,30 @@ class MywaterclosetSeeder extends Seeder
             ]
         );
 
-        // Ensure settings exist
+        // Ensure settings exist (using actual schema columns)
         WorkspaceSettings::firstOrCreate(
             ['workspace_id' => $workspace->id],
             [
                 'workspace_id' => $workspace->id,
-                'welcome_message' => 'Welcome to MyWaterCloset! How can we help you today?',
-                'auto_reply_enabled' => true,
-                'auto_reply_message' => 'Thanks for reaching out! A team member will respond shortly.',
-                'notification_email' => 'support@mywatercloset.com',
-                'file_uploads_enabled' => true,
-                'max_file_size_mb' => 10,
+                'read_receipts_enabled' => true,
+                'online_status_enabled' => true,
+                'typing_indicators_enabled' => true,
+                'file_size_limit_mb' => 10,
+                'rate_limit_per_minute' => 60,
             ]
         );
 
-        // Ensure theme exists with mywatercloset branding
+        // Ensure theme exists with mywatercloset branding (using actual schema columns)
         WorkspaceTheme::firstOrCreate(
             ['workspace_id' => $workspace->id],
             [
                 'workspace_id' => $workspace->id,
+                'preset' => 'professional',
                 'primary_color' => '#0ea5e9',     // Sky blue
-                'secondary_color' => '#0284c7',
                 'background_color' => '#f0f9ff',
-                'text_color' => '#0c4a6e',
-                'border_radius' => 12,
                 'font_family' => 'Inter, system-ui, sans-serif',
+                'position' => 'bottom-right',
+                'dark_mode_enabled' => true,
             ]
         );
 
