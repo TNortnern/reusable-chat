@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('status')->default('pending'); // pending, reviewed, resolved, dismissed
             $table->timestamp('resolved_at')->nullable();
-            $table->foreignUuid('resolved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('resolved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('resolution_notes')->nullable();
             $table->timestamps();
 
