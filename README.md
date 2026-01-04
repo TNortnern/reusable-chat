@@ -18,61 +18,336 @@ Multi-tenant embeddable real-time chat platform. Think Intercom/Drift but for an
 - Message reporting/moderation
 - Conversation types (inquiry, booking, support)
 - Branded widget ("Powered by Reusable Chat")
+- **Embeddable Web Components Widget**
+
+---
+
+## Embeddable Widget
+
+Add a full-featured chat widget to any website with just a few lines of code.
+
+### Quick Start
+
+```html
+<!-- Add the widget script -->
+<script src="https://hastest.b-cdn.net/widget/v1/widget.js"></script>
+
+<!-- Add the chat widget -->
+<reusable-chat
+  api-key="pk_your_api_key"
+  user-id="user-123"
+  user-name="John Doe"
+></reusable-chat>
+```
+
+### CDN URLs
+
+| Version | URL |
+|---------|-----|
+| Latest (v1) | `https://hastest.b-cdn.net/widget/v1/widget.js` |
+| v1.0.0 | `https://hastest.b-cdn.net/widget/v1.0.0/widget.js` |
+
+### Widget Attributes
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `api-key` | string | (required) | Your workspace public API key |
+| `user-id` | string | - | Unique identifier for the current user |
+| `user-name` | string | - | Display name for the current user |
+| `user-email` | string | - | User's email address (optional) |
+| `position` | `"bottom-right"` \| `"bottom-left"` | `"bottom-right"` | Widget position on screen |
+| `theme` | `"light"` \| `"dark"` | `"light"` | Color theme |
+| `accent-color` | string | - | Custom accent color (hex, e.g., `#2563eb`) |
+| `show-branding` | boolean | `true` | Show "Powered by Reusable Chat" text |
+| `api-url` | string | Production URL | Custom API URL (for self-hosted) |
+
+### JavaScript API
+
+Control the widget programmatically:
+
+```javascript
+// Get the widget element
+const chat = document.querySelector('reusable-chat');
+
+// Update user dynamically
+chat.setAttribute('user-id', 'user-456');
+chat.setAttribute('user-name', 'Jane Smith');
+chat.setAttribute('user-email', 'jane@example.com');
+
+// Change appearance
+chat.setAttribute('theme', 'dark');
+chat.setAttribute('position', 'bottom-left');
+chat.setAttribute('accent-color', '#8b5cf6');
+```
+
+### Custom Events
+
+Listen for widget events:
+
+```javascript
+const chat = document.querySelector('reusable-chat');
+
+// Widget opened
+chat.addEventListener('widget-open', () => {
+  console.log('Chat widget opened');
+});
+
+// Widget closed
+chat.addEventListener('widget-close', () => {
+  console.log('Chat widget closed');
+});
+
+// New message received
+chat.addEventListener('message-received', (e) => {
+  console.log('New message:', e.detail);
+});
+
+// Connection status changed
+chat.addEventListener('connection-change', (e) => {
+  console.log('Connected:', e.detail.connected);
+});
+```
+
+### Theming with CSS Variables
+
+Customize the widget appearance with CSS variables:
+
+```css
+reusable-chat {
+  /* Primary colors */
+  --rc-primary: #2563eb;
+  --rc-secondary: #3b82f6;
+
+  /* Background colors */
+  --rc-bg: #ffffff;
+  --rc-bg-secondary: #f8fafc;
+
+  /* Text colors */
+  --rc-text: #1e293b;
+  --rc-text-secondary: #64748b;
+
+  /* Other */
+  --rc-border: #e2e8f0;
+  --rc-radius: 16px;
+  --rc-radius-sm: 8px;
+  --rc-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  --rc-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+```
+
+### Framework Examples
+
+#### React
+
+```jsx
+import { useEffect, useRef } from 'react';
+
+function ChatWidget({ userId, userName }) {
+  const widgetRef = useRef(null);
+
+  useEffect(() => {
+    // Load the widget script
+    const script = document.createElement('script');
+    script.src = 'https://hastest.b-cdn.net/widget/v1/widget.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (widgetRef.current) {
+      widgetRef.current.setAttribute('user-id', userId);
+      widgetRef.current.setAttribute('user-name', userName);
+    }
+  }, [userId, userName]);
+
+  return (
+    <reusable-chat
+      ref={widgetRef}
+      api-key="pk_your_api_key"
+      user-id={userId}
+      user-name={userName}
+      theme="light"
+    />
+  );
+}
+```
+
+#### Vue 3
+
+```vue
+<template>
+  <reusable-chat
+    ref="chatWidget"
+    api-key="pk_your_api_key"
+    :user-id="user.id"
+    :user-name="user.name"
+    :user-email="user.email"
+    theme="light"
+  />
+</template>
+
+<script setup>
+import { onMounted } from 'vue';
+
+const user = {
+  id: 'user-123',
+  name: 'John Doe',
+  email: 'john@example.com'
+};
+
+onMounted(() => {
+  // Load the widget script
+  const script = document.createElement('script');
+  script.src = 'https://hastest.b-cdn.net/widget/v1/widget.js';
+  document.body.appendChild(script);
+});
+</script>
+```
+
+#### Nuxt 3
+
+```vue
+<template>
+  <ClientOnly>
+    <reusable-chat
+      v-if="mounted"
+      api-key="pk_your_api_key"
+      :user-id="user?.id"
+      :user-name="user?.name"
+      theme="light"
+    />
+  </ClientOnly>
+</template>
+
+<script setup>
+const user = useAuth().user;
+const mounted = ref(false);
+
+onMounted(() => {
+  // Load widget script
+  useHead({
+    script: [
+      { src: 'https://hastest.b-cdn.net/widget/v1/widget.js', defer: true }
+    ]
+  });
+  mounted.value = true;
+});
+</script>
+```
+
+#### Vanilla JavaScript
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My App</title>
+</head>
+<body>
+  <!-- Your app content -->
+
+  <!-- Chat widget -->
+  <script src="https://hastest.b-cdn.net/widget/v1/widget.js"></script>
+  <reusable-chat
+    id="chat-widget"
+    api-key="pk_your_api_key"
+    theme="light"
+  ></reusable-chat>
+
+  <script>
+    // Set user info after authentication
+    function initChat(user) {
+      const chat = document.getElementById('chat-widget');
+      chat.setAttribute('user-id', user.id);
+      chat.setAttribute('user-name', user.name);
+      chat.setAttribute('user-email', user.email);
+    }
+
+    // Example: Initialize after login
+    loginUser().then(user => {
+      initChat(user);
+    });
+  </script>
+</body>
+</html>
+```
+
+### Inline Widget Mode
+
+For embedding the chat directly in a page (not as a floating bubble):
+
+```html
+<script src="https://hastest.b-cdn.net/widget/v1/widget.js"></script>
+
+<!-- Inline mode - renders directly in the page flow -->
+<reusable-chat-inline
+  api-key="pk_your_api_key"
+  user-id="user-123"
+  user-name="John Doe"
+  conversation-id="conv-uuid"
+  style="height: 500px; width: 100%;"
+></reusable-chat-inline>
+```
 
 ---
 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Your Application                             │
-│  (watercloset, your-app, etc.)                                       │
-│                                                                       │
-│  ┌──────────────────┐    ┌──────────────────────────────────────┐   │
-│  │  Backend Server  │    │           Frontend Widget             │   │
-│  │                  │    │                                        │   │
-│  │  POST /api/v1/*  │───▶│  useReusableChat() composable         │   │
-│  │  (X-API-Key)     │    │  - Creates sessions                   │   │
-│  │                  │    │  - Fetches conversations               │   │
-│  └────────┬─────────┘    │  - Sends messages                     │   │
-│           │              │  - Uploads attachments                 │   │
-│           │              │  - WebSocket real-time updates         │   │
-│           ▼              └─────────────────┬────────────────────┘   │
-└───────────┼────────────────────────────────┼───────────────────────┘
-            │                                │
-            ▼                                ▼
-┌───────────────────────────────────────────────────────────────────────┐
-│                        Reusable Chat Platform                          │
-│                                                                         │
-│  ┌────────────────────┐     ┌────────────────────┐                    │
-│  │   API Server       │     │   WebSocket Server │                    │
-│  │   (Laravel 11)     │     │   (Reverb)         │                    │
-│  │                    │     │                    │                    │
-│  │  /api/v1/*         │     │  Channels:         │                    │
-│  │  - Users           │     │  - conversation.{id}│                   │
-│  │  - Sessions        │     │  - user.{id}       │                    │
-│  │  - Conversations   │     │                    │                    │
-│  │  - Moderation      │     │  Events:           │                    │
-│  │                    │     │  - message.created │                    │
-│  │  /api/widget/*     │     │  - user.typing     │                    │
-│  │  - Messages        │     │  - message.read    │                    │
-│  │  - Attachments     │     │                    │                    │
-│  │  - Typing          │     └────────────────────┘                    │
-│  │  - Reactions       │                                               │
-│  └────────────────────┘                                               │
-│                                                                         │
-│  ┌────────────────────┐     ┌────────────────────┐                    │
-│  │   PostgreSQL       │     │   Redis            │                    │
-│  │   - Users/Chat     │     │   - Sessions       │                    │
-│  │   - Messages       │     │   - Cache          │                    │
-│  │   - Conversations  │     │   - Queue          │                    │
-│  └────────────────────┘     └────────────────────┘                    │
-│                                                                         │
-│  ┌────────────────────┐                                               │
-│  │   Bunny CDN        │                                               │
-│  │   - Attachments    │                                               │
-│  └────────────────────┘                                               │
-└───────────────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------------+
+|                         Your Application                             |
+|  (watercloset, your-app, etc.)                                       |
+|                                                                       |
+|  +------------------+    +--------------------------------------+    |
+|  |  Backend Server  |    |           Frontend Widget             |   |
+|  |                  |    |                                        |   |
+|  |  POST /api/v1/*  |--->|  useReusableChat() composable         |   |
+|  |  (X-API-Key)     |    |  - Creates sessions                   |   |
+|  |                  |    |  - Fetches conversations               |   |
+|  +--------+---------+    |  - Sends messages                     |   |
+|           |              |  - Uploads attachments                 |   |
+|           |              |  - WebSocket real-time updates         |   |
+|           v              +-----------------+--------------------+    |
++-----------+--------------------------------+------------------------+
+            |                                |
+            v                                v
++---------------------------------------------------------------------------+
+|                        Reusable Chat Platform                              |
+|                                                                            |
+|  +--------------------+     +--------------------+                         |
+|  |   API Server       |     |   WebSocket Server |                         |
+|  |   (Laravel 11)     |     |   (Reverb)         |                         |
+|  |                    |     |                    |                         |
+|  |  /api/v1/*         |     |  Channels:         |                         |
+|  |  - Users           |     |  - conversation.{id}|                        |
+|  |  - Sessions        |     |  - user.{id}       |                         |
+|  |  - Conversations   |     |                    |                         |
+|  |  - Moderation      |     |  Events:           |                         |
+|  |                    |     |  - message.created |                         |
+|  |  /api/widget/*     |     |  - user.typing     |                         |
+|  |  - Messages        |     |  - message.read    |                         |
+|  |  - Attachments     |     |                    |                         |
+|  |  - Typing          |     +--------------------+                         |
+|  |  - Reactions       |                                                    |
+|  +--------------------+                                                    |
+|                                                                            |
+|  +--------------------+     +--------------------+                         |
+|  |   PostgreSQL       |     |   Redis            |                         |
+|  |   - Users/Chat     |     |   - Sessions       |                         |
+|  |   - Messages       |     |   - Cache          |                         |
+|  |   - Conversations  |     |   - Queue          |                         |
+|  +--------------------+     +--------------------+                         |
+|                                                                            |
+|  +--------------------+                                                    |
+|  |   Bunny CDN        |                                                    |
+|  |   - Attachments    |                                                    |
+|  |   - Widget JS      |                                                    |
+|  +--------------------+                                                    |
++----------------------------------------------------------------------------+
 ```
 
 ---
@@ -258,14 +533,14 @@ export const useReusableChat = () => {
 
 | Feature | Reusable Chat | Your App |
 |---------|--------------|----------|
-| User storage | ✅ Stores chat users | ✅ Your auth users |
-| Message storage | ✅ Full persistence | - |
-| WebSocket server | ✅ Laravel Reverb | - |
-| Real-time events | ✅ Broadcasting | ✅ Echo client setup |
-| File uploads | ✅ API + CDN storage | - |
-| API endpoints | ✅ Full CRUD | ✅ Session proxy route |
-| Chat UI | ✅ Demo page | ✅ Your custom UI |
-| Authentication | ✅ Session tokens | ✅ Your auth + API key |
+| User storage | Stores chat users | Your auth users |
+| Message storage | Full persistence | - |
+| WebSocket server | Laravel Reverb | - |
+| Real-time events | Broadcasting | Echo client setup |
+| File uploads | API + CDN storage | - |
+| API endpoints | Full CRUD | Session proxy route |
+| Chat UI | Demo page + Widget | Your custom UI |
+| Authentication | Session tokens | Your auth + API key |
 
 ---
 
@@ -308,6 +583,25 @@ docker-compose exec dashboard npm install
 | PostgreSQL | 5432 | Database |
 | Redis | 6379 | Cache/Queue/Sessions |
 
+### Widget Development
+
+```bash
+# Navigate to widget directory
+cd widget
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Upload to CDN
+./scripts/upload-cdn.sh
+```
+
 ---
 
 ## Production Deployment
@@ -315,6 +609,7 @@ docker-compose exec dashboard npm install
 Currently deployed on Railway:
 - **API**: https://api-production-de24c.up.railway.app
 - **Dashboard**: https://dashboard-production-8985.up.railway.app
+- **Widget CDN**: https://hastest.b-cdn.net/widget/v1/widget.js
 - **PostgreSQL & Redis**: Railway managed services
 
 ### Environment Variables
@@ -372,8 +667,21 @@ reusable-chat/
 ├── dashboard/              # Nuxt frontend
 │   ├── app/
 │   │   └── pages/
-│   │       └── demo.vue         # Public demo chat
+│   │       ├── demo.vue         # Public demo chat
+│   │       └── dashboard/
+│   │           └── embed.vue    # Widget embed code generator
 │   └── nuxt.config.ts
+├── widget/                 # Embeddable Web Components widget
+│   ├── src/
+│   │   ├── index.ts            # Entry point
+│   │   ├── reusable-chat.ts    # Floating bubble widget
+│   │   ├── reusable-chat-inline.ts  # Inline widget
+│   │   ├── services/           # API, WebSocket, Storage
+│   │   └── styles/             # CSS styles
+│   ├── scripts/
+│   │   └── upload-cdn.sh       # CDN deployment script
+│   ├── package.json
+│   └── vite.config.ts
 ├── docker-compose.yml      # Local development
 └── CLAUDE.md               # Project context
 ```
