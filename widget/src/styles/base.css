@@ -1,0 +1,45 @@
+:host {
+  --rc-primary: #667eea;
+  --rc-primary-dark: #5a67d8;
+  --rc-secondary: #764ba2;
+  --rc-bg: #ffffff;
+  --rc-bg-secondary: #f7fafc;
+  --rc-text: #1a202c;
+  --rc-text-secondary: #718096;
+  --rc-border: #e2e8f0;
+  --rc-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  --rc-radius: 16px;
+  --rc-radius-sm: 8px;
+  --rc-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  font-family: var(--rc-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--rc-text);
+}
+
+:host([theme="dark"]) {
+  --rc-bg: #1a202c;
+  --rc-bg-secondary: #2d3748;
+  --rc-text: #f7fafc;
+  --rc-text-secondary: #a0aec0;
+  --rc-border: #4a5568;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}

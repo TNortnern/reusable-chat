@@ -1,39 +1,31 @@
 export interface WidgetConfig {
-  workspaceId: string
+  apiKey: string
   userId?: string
-  userToken?: string
-  apiUrl?: string
-  wsHost?: string
-  wsPort?: number
-  wsKey?: string
+  userName?: string
+  userEmail?: string
+  userAvatar?: string
   position?: 'bottom-right' | 'bottom-left'
-  theme?: WidgetTheme
-  title?: string
-  subtitle?: string
-  placeholder?: string
-  welcomeMessage?: string
+  theme?: 'light' | 'dark'
+  accentColor?: string
+  showBranding?: boolean
+  apiUrl?: string
 }
 
-export interface WidgetTheme {
-  primaryColor?: string
-  textColor?: string
-  backgroundColor?: string
-  headerColor?: string
-  headerTextColor?: string
-  buttonColor?: string
-  buttonTextColor?: string
-  fontFamily?: string
-  borderRadius?: string
+export interface User {
+  id: string
+  name: string
+  email?: string
+  avatar_url?: string
 }
 
 export interface Message {
   id: string
   content: string
   sender_id: string
-  sender_name: string
-  created_at: string
+  sender?: User
   attachments?: Attachment[]
-  is_own?: boolean
+  created_at: string
+  isOptimistic?: boolean
 }
 
 export interface Attachment {
@@ -44,26 +36,31 @@ export interface Attachment {
   size: number
 }
 
-export interface PendingFile {
-  file: File
-  name: string
-  type: string
-  preview: string
-}
-
-export interface Participant {
+export interface Conversation {
   id: string
-  name: string
+  participants: User[]
+  last_message?: Message
+  unread_count: number
+  metadata?: Record<string, any>
+  updated_at: string
 }
 
 export interface Session {
   token: string
-  userId: string
-  userName: string
+  user: User
+  expires_at: string
 }
 
-export interface Conversation {
-  id: string
-  name?: string
-  participants: Participant[]
+export interface InitResponse {
+  workspace_id: string
+  workspace_name: string
+  settings: {
+    position: string
+    theme: string
+    show_branding: boolean
+  }
+  theme: {
+    primary_color: string
+    secondary_color: string
+  }
 }

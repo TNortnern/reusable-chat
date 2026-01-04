@@ -24,9 +24,11 @@ use App\Http\Controllers\Dashboard\WorkspaceController;
 use App\Http\Controllers\Dashboard\SettingsController;
 use App\Http\Controllers\Dashboard\ThemeController;
 use App\Http\Controllers\Dashboard\ApiKeyController;
+use App\Http\Controllers\Dashboard\PublicKeyController;
 use App\Http\Controllers\Dashboard\ConversationController as DashboardConversationController;
 use App\Http\Controllers\Dashboard\UserController as DashboardUserController;
 use App\Http\Controllers\Dashboard\AnalyticsController;
+use App\Http\Controllers\Embed\EmbedController;
 
 // Consumer Backend API (v1) - API Key Auth
 Route::prefix('v1')->middleware(['api.key', 'throttle:api-v1'])->group(function () {
@@ -51,6 +53,12 @@ Route::prefix('v1')->middleware(['api.key', 'throttle:api-v1'])->group(function 
 
     // Demo
     Route::post('/demo/rooms', [DemoController::class, 'createRoom']);
+});
+
+// Embed API - Public Key Auth (for embeddable widget)
+Route::prefix('embed')->middleware(['throttle:embed'])->group(function () {
+    Route::post('/init', [EmbedController::class, 'init']);
+    Route::post('/session', [EmbedController::class, 'session']);
 });
 
 // Widget API - Session Token Auth
@@ -116,6 +124,12 @@ Route::prefix('dashboard')->group(function () {
         Route::get('/workspaces/{id}/api-keys', [ApiKeyController::class, 'index']);
         Route::post('/workspaces/{id}/api-keys', [ApiKeyController::class, 'store']);
         Route::delete('/workspaces/{id}/api-keys/{keyId}', [ApiKeyController::class, 'destroy']);
+
+        // Public Keys (for embeddable widget)
+        Route::get('/workspaces/{id}/public-keys', [PublicKeyController::class, 'index']);
+        Route::post('/workspaces/{id}/public-keys', [PublicKeyController::class, 'store']);
+        Route::patch('/workspaces/{id}/public-keys/{keyId}', [PublicKeyController::class, 'update']);
+        Route::delete('/workspaces/{id}/public-keys/{keyId}', [PublicKeyController::class, 'destroy']);
 
         // Conversations & Messages
         Route::get('/workspaces/{id}/conversations', [DashboardConversationController::class, 'index']);

@@ -108,5 +108,15 @@ class AppServiceProvider extends ServiceProvider
                 ], 429);
             });
         });
+
+        // Embed API endpoints: 60 per minute per IP
+        RateLimiter::for('embed', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip())->response(function () {
+                return response()->json([
+                    'error' => 'Rate limit exceeded. Please try again later.',
+                    'retry_after' => 60,
+                ], 429);
+            });
+        });
     }
 }

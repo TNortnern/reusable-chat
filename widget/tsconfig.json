@@ -2,13 +2,15 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "moduleResolution": "bundler",
     "strict": true,
-    "declaration": true,
-    "outDir": "dist",
-    "lib": ["ES2020", "DOM"],
-    "jsx": "preserve",
-    "types": ["vite/client"]
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false
   },
-  "include": ["src/**/*", "src/**/*.vue"]
+  "include": ["src/**/*.ts"]
 }

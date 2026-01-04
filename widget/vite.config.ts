@@ -1,27 +1,24 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
-import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
-  plugins: [vue()],
-  define: {
-    'process.env.NODE_ENV': JSON.stringify('production'),
-  },
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/main.ts'),
-      name: 'ChatWidget',
+      entry: resolve(__dirname, 'src/index.ts'),
+      name: 'ReusableChat',
       fileName: 'widget',
-      formats: ['iife']
+      formats: ['iife'], // Single file for browser
     },
-    outDir: 'dist',
-    minify: 'terser',
-    cssCodeSplit: false,
     rollupOptions: {
       output: {
+        // Ensure everything is in one file
         inlineDynamicImports: true,
-        assetFileNames: 'widget.[ext]',
-      }
-    }
+      },
+    },
+    minify: 'terser',
+    sourcemap: true,
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
   },
 })

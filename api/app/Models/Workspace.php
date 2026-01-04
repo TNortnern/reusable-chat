@@ -54,4 +54,9 @@ class Workspace extends Model
     {
         return $this->hasMany(Ban::class);
     }
+
+    public function publicKeys(): HasMany
+    {
+        return $this->hasMany(PublicKey::class);
+    }
 }
