@@ -18,6 +18,7 @@ use App\Http\Controllers\Widget\TypingController;
 use App\Http\Controllers\Widget\AttachmentController;
 use App\Http\Controllers\Widget\BlockController;
 use App\Http\Controllers\Widget\BroadcastAuthController;
+use App\Http\Controllers\Widget\ReportController;
 use App\Http\Controllers\Dashboard\AuthController;
 use App\Http\Controllers\Dashboard\WorkspaceController;
 use App\Http\Controllers\Dashboard\SettingsController;
@@ -62,6 +63,7 @@ Route::prefix('widget')->middleware(['session.token', 'throttle:widget'])->group
     Route::get('/conversations', [WidgetConversationController::class, 'index']);
     Route::post('/conversations', [WidgetConversationController::class, 'store']);
     Route::get('/conversations/{id}', [WidgetConversationController::class, 'show']);
+    Route::delete('/conversations/{id}', [WidgetConversationController::class, 'leave']);
 
     // Messages - specific rate limit + content validation
     Route::post('/conversations/{conversationId}/messages', [MessageController::class, 'store'])
@@ -69,6 +71,9 @@ Route::prefix('widget')->middleware(['session.token', 'throttle:widget'])->group
 
     Route::post('/conversations/{conversationId}/messages/{messageId}/reactions', [ReactionController::class, 'store']);
     Route::delete('/conversations/{conversationId}/messages/{messageId}/reactions/{emoji}', [ReactionController::class, 'destroy']);
+
+    // Message reporting
+    Route::post('/conversations/{conversationId}/messages/{messageId}/report', [ReportController::class, 'store']);
 
     Route::post('/conversations/{conversationId}/read', [ReadReceiptController::class, 'store']);
 

@@ -142,4 +142,30 @@ class ConversationController extends Controller
             'messages' => $messages,
         ]);
     }
+
+    /**
+     * Leave/archive a conversation for the current user
+     * Note: Doesn't delete the conversation, just removes the user as a participant
+     */
+    public function leave(Request $request, string $id): JsonResponse
+    {
+        $user = $request->chatUser;
+
+        $conversation = Conversation::where('workspace_id', $request->workspace->id)
+            ->where('id', $id)
+            ->whereHas('participants', fn($q) => $q->where('chat_user_id', $user->id))
+            ->firstOrFail();
+
+        // Remove user from participants
+        Participant::where('conversation_id', $conversation->id)
+            ->where('chat_user_id', $user->id)
+            ->delete();
+
+        // If no participants left, delete the conversation
+        if ($conversation->participants()->count() === 0) {
+            $conversation->delete();
+        }
+
+        return response()->json(['message' => 'Left conversation successfully']);
+    }
 }

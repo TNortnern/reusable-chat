@@ -29,7 +29,7 @@ class ConversationController extends Controller
                 $query->where('chat_user_id', $user->id);
             })
             ->with(['participants', 'lastMessage'])
-            ->orderByDesc('last_message_at')
+            ->orderByDesc('updated_at')
             ->paginate($validated['per_page'] ?? 20);
 
         return response()->json($conversations);
@@ -101,18 +101,34 @@ class ConversationController extends Controller
             ->where('id', $validated['user_id'])
             ->firstOrFail();
 
-        // Count conversations with unread messages
-        $unreadCount = Conversation::where('workspace_id', $workspace->id)
+        // Get all conversations for this user with their participants
+        $conversations = Conversation::where('workspace_id', $workspace->id)
             ->whereHas('participants', function ($query) use ($user) {
                 $query->where('chat_user_id', $user->id);
             })
-            ->whereHas('messages', function ($query) use ($user) {
-                $query->where('sender_id', '!=', $user->id)
-                    ->whereDoesntHave('readReceipts', function ($q) use ($user) {
-                        $q->where('chat_user_id', $user->id);
-                    });
-            })
-            ->count();
+            ->with(['participants' => function ($query) use ($user) {
+                $query->where('chat_user_id', $user->id);
+            }])
+            ->get();
+
+        // Count total unread messages using last_read_at on participant
+        $unreadCount = 0;
+        foreach ($conversations as $conversation) {
+            $participant = $conversation->participants->first();
+            $lastReadAt = $participant?->last_read_at;
+
+            if ($lastReadAt) {
+                $unreadCount += $conversation->messages()
+                    ->where('created_at', '>', $lastReadAt)
+                    ->where('sender_id', '!=', $user->id)
+                    ->count();
+            } else {
+                // Never read - all messages from others are unread
+                $unreadCount += $conversation->messages()
+                    ->where('sender_id', '!=', $user->id)
+                    ->count();
+            }
+        }
 
         return response()->json(['unread_count' => $unreadCount]);
     }
