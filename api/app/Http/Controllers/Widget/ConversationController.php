@@ -15,10 +15,20 @@ class ConversationController extends Controller
     {
         $user = $request->chatUser;
 
-        $conversations = Conversation::where('workspace_id', $request->workspace->id)
+        // Get type filter from query param (for filtering by metadata.type)
+        $typeFilter = $request->query('type');
+
+        $query = Conversation::where('workspace_id', $request->workspace->id)
             ->whereHas('participants', function ($query) use ($user) {
                 $query->where('chat_user_id', $user->id);
-            })
+            });
+
+        // Filter by metadata type if provided
+        if ($typeFilter && in_array($typeFilter, ['inquiry', 'booking'])) {
+            $query->whereJsonContains('metadata->type', $typeFilter);
+        }
+
+        $conversations = $query
             ->with(['participants', 'lastMessage'])
             ->orderByDesc('updated_at')
             ->paginate(20);
