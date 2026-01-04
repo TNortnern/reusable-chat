@@ -27,11 +27,11 @@
 
 ## Documentation
 
-- [ ] Update README.md with latest features
-- [ ] Document the widget API endpoints
-- [ ] Document WebSocket events
-- [ ] Explain watercloset integration architecture
-- [ ] Add setup guide for new integrations
+- [x] Update README.md with latest features
+- [x] Document the widget API endpoints
+- [x] Document WebSocket events
+- [x] Explain watercloset integration architecture
+- [x] Add setup guide for new integrations
 
 ## Architecture Explanation (for user)
 
@@ -43,8 +43,8 @@ After completing tasks, provide explanation of:
 ## Deployment
 
 - [ ] Deploy reusable-chat API changes
-- [ ] Deploy reusable-chat dashboard changes
-- [ ] Verify watercloset deployment completed
+- [x] Deploy reusable-chat dashboard changes (pushed to main, auto-deploys)
+- [x] Verify watercloset deployment completed
 - [ ] Test end-to-end in production
 
 ---
@@ -53,5 +53,6 @@ After completing tasks, provide explanation of:
 
 ### 2026-01-04
 - Fixed `window.open()` bug in watercloset/messages/index.vue
-- Started adding lightbox viewer to reusable-chat demo
-- Added "Powered by" branding badge
+- Added lightbox viewer to reusable-chat demo page
+- Added "Powered by Reusable Chat" branding badge
+- Deployed changes to production
