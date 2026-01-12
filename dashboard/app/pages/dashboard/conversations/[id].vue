@@ -27,7 +27,7 @@
       </div>
 
       <!-- Chat Window -->
-      <div class="flex-1 p-4">
+      <div class="flex-1 min-h-0 overflow-hidden p-4">
         <ChatWindow
           v-if="conversation"
           :conversation="conversation"

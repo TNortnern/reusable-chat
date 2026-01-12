@@ -43,26 +43,6 @@
       </div>
     </div>
 
-    <!-- Image Lightbox Modal -->
-    <Teleport to="body">
-      <Transition name="lightbox">
-        <div v-if="lightboxImage" class="lightbox-overlay" @click="closeLightbox">
-          <div class="lightbox-content" @click.stop>
-            <button class="lightbox-close" @click="closeLightbox">&times;</button>
-            <img :src="lightboxImage.url" :alt="lightboxImage.name || 'Image'" class="lightbox-image" />
-            <div v-if="lightboxImage.name" class="lightbox-caption">{{ lightboxImage.name }}</div>
-            <a :href="lightboxImage.url" download class="lightbox-download" title="Download">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
-
     <!-- Chat Screen -->
     <div v-else class="chat-screen">
       <div class="chat-header">
@@ -192,6 +172,26 @@
         </a>
       </div>
     </div>
+
+    <!-- Image Lightbox Modal -->
+    <Teleport to="body">
+      <Transition name="lightbox">
+        <div v-if="lightboxImage" class="lightbox-overlay" @click="closeLightbox">
+          <div class="lightbox-content" @click.stop>
+            <button class="lightbox-close" @click="closeLightbox">&times;</button>
+            <img :src="lightboxImage.url" :alt="lightboxImage.name || 'Image'" class="lightbox-image" />
+            <div v-if="lightboxImage.name" class="lightbox-caption">{{ lightboxImage.name }}</div>
+            <a :href="lightboxImage.url" download class="lightbox-download" title="Download">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
