@@ -10,7 +10,31 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "declaration": true,
+    "declarationDir": "./dist",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "resolveJsonModule": true,
+    "isolatedModules": true
   },
-  "include": ["src/**/*.ts"]
+  "include": [
+    "src/index.ts",
+    "src/types.ts",
+    "src/reusable-chat.ts",
+    "src/reusable-chat-inline.ts",
+    "src/services/**/*.ts",
+    "src/vite-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/api.ts",
+    "src/echo.ts",
+    "src/main.ts",
+    "src/styles.ts",
+    "src/widget.ts",
+    "src/shims-vue.d.ts",
+    "src/components/**"
+  ]
 }

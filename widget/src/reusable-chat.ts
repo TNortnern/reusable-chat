@@ -1,10 +1,22 @@
 import { LitElement, html, css, nothing, unsafeCSS } from 'lit'
 import { customElement, property, state, query } from 'lit/decorators.js'
 import type { WidgetConfig, Session, Conversation, Message, Attachment, User } from './types'
-import { ApiService } from './services/api'
+import { ApiService, ApiError } from './services/api'
 import { WebSocketService } from './services/websocket'
-import { storage } from './services/storage'
+import { storage, StoredSession } from './services/storage'
 import baseStyles from './styles/base.css?inline'
+
+// ============================================
+// Custom Event Types
+// ============================================
+export interface ReusableChatEventMap {
+  'rc-ready': CustomEvent<void>
+  'rc-open': CustomEvent<void>
+  'rc-close': CustomEvent<void>
+  'rc-message': CustomEvent<{ message: Message; conversationId: string }>
+  'rc-send': CustomEvent<{ message: Message; conversationId: string }>
+  'rc-error': CustomEvent<{ error: Error; code?: string }>
+}
 
 interface PendingAttachment {
   id: string
@@ -25,18 +37,25 @@ interface TypingUser {
 export class ReusableChat extends LitElement {
   static styles = css`${unsafeCSS(baseStyles)}`
 
-  @property({ attribute: 'api-key' }) apiKey = ''
-  @property({ attribute: 'user-id' }) userId = ''
-  @property({ attribute: 'user-name' }) userName = ''
-  @property({ attribute: 'user-email' }) userEmail = ''
-  @property({ attribute: 'position' }) position: 'bottom-right' | 'bottom-left' = 'bottom-right'
-  @property({ attribute: 'theme' }) theme: 'light' | 'dark' = 'light'
-  @property({ attribute: 'accent-color' }) accentColor = ''
-  @property({ type: Boolean, attribute: 'show-branding' }) showBranding = true
-  @property({ attribute: 'api-url' }) apiUrl = 'https://api-production-de24c.up.railway.app'
-  @property({ attribute: 'ws-host' }) wsHost = 'api-production-de24c.up.railway.app'
-  @property({ attribute: 'ws-key' }) wsKey = 'reusable-chat-key'
+  // ============================================
+  // HTML Attributes (Reactive Properties with reflection)
+  // ============================================
+  @property({ attribute: 'api-key', reflect: true }) apiKey = ''
+  @property({ attribute: 'user-id', reflect: true }) userId = ''
+  @property({ attribute: 'user-name', reflect: true }) userName = ''
+  @property({ attribute: 'user-email', reflect: true }) userEmail = ''
+  @property({ attribute: 'user-avatar', reflect: true }) userAvatar = ''
+  @property({ attribute: 'position', reflect: true }) position: 'bottom-right' | 'bottom-left' = 'bottom-right'
+  @property({ attribute: 'theme', reflect: true }) theme: 'light' | 'dark' = 'light'
+  @property({ attribute: 'accent-color', reflect: true }) accentColor = ''
+  @property({ type: Boolean, attribute: 'show-branding', reflect: true }) showBranding = true
+  @property({ attribute: 'api-url', reflect: true }) apiUrl = 'https://api-production-de24c.up.railway.app'
+  @property({ attribute: 'ws-host', reflect: true }) wsHost = 'api-production-de24c.up.railway.app'
+  @property({ attribute: 'ws-key', reflect: true }) wsKey = 'reusable-chat-key'
 
+  // ============================================
+  // Internal State
+  // ============================================
   @state() private isOpen = false
   @state() private wsConnected = false
   @state() private isLoading = true
@@ -60,7 +79,12 @@ export class ReusableChat extends LitElement {
   private ws: WebSocketService | null = null
   private typingTimeout: ReturnType<typeof setTimeout> | null = null
   private lastTypingSent = 0
+  private initialized = false
+  private cleanupCallbacks: (() => void)[] = []
 
+  // ============================================
+  // Lifecycle
+  // ============================================
   async connectedCallback() {
     super.connectedCallback()
     await this.initialize()
@@ -68,12 +92,17 @@ export class ReusableChat extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback()
-    this.ws?.disconnect()
+    this.cleanupResources()
   }
 
   private async initialize() {
+    if (this.initialized) return
+    this.initialized = true
+
     if (!this.apiKey) {
+      this.emitError(new Error('api-key attribute is required'), 'MISSING_API_KEY')
       console.error('[Reusable Chat] api-key attribute is required')
+      this.isLoading = false
       return
     }
 
@@ -96,7 +125,12 @@ export class ReusableChat extends LitElement {
       } else if (this.userId && this.userName) {
         await this.createSession()
       }
+
+      // Emit ready event
+      this.emitReady()
     } catch (error) {
+      const err = error instanceof Error ? error : new Error('Initialization error')
+      this.emitError(err, 'INIT_ERROR')
       console.error('[Reusable Chat] Initialization error:', error)
     } finally {
       this.isLoading = false
@@ -110,7 +144,8 @@ export class ReusableChat extends LitElement {
       const session = await this.api.createSession(
         this.userId,
         this.userName,
-        this.userEmail
+        this.userEmail,
+        this.userAvatar
       )
       this.session = session
       this.api.setSessionToken(session.token)
@@ -122,18 +157,24 @@ export class ReusableChat extends LitElement {
 
       this.setupWebSocket(session.token)
     } catch (error) {
+      const err = error instanceof Error ? error : new Error('Session creation error')
+      this.emitError(err, 'SESSION_ERROR')
       console.error('[Reusable Chat] Session creation error:', error)
     }
   }
 
   private setupWebSocket(token: string) {
-    this.ws = new WebSocketService(this.wsHost, this.wsKey, token)
+    this.ws = new WebSocketService(this.apiUrl, this.wsKey, token)
 
-    this.ws.onConnection((connected) => {
+    const unsubConnection = this.ws.onConnection((connected) => {
       this.wsConnected = connected
     })
+    this.cleanupCallbacks.push(unsubConnection)
 
-    this.ws.onMessage((message, conversationId) => {
+    const unsubMessage = this.ws.onMessage((message, conversationId) => {
+      // Emit event for external listeners
+      this.emitMessage(message, conversationId)
+
       if (this.selectedConversation?.id === conversationId) {
         // Remove optimistic message if this is the confirmed version
         this.messages = this.messages.filter(m => !m.isOptimistic || m.id !== message.id)
@@ -143,8 +184,9 @@ export class ReusableChat extends LitElement {
       // Update conversation list
       this.updateConversationLastMessage(conversationId, message)
     })
+    this.cleanupCallbacks.push(unsubMessage)
 
-    this.ws.onTyping((data, conversationId) => {
+    const unsubTyping = this.ws.onTyping((data, conversationId) => {
       if (this.selectedConversation?.id === conversationId && data.user_id !== this.userId) {
         if (data.is_typing) {
           const existing = this.typingUsers.get(data.user_id)
@@ -165,8 +207,21 @@ export class ReusableChat extends LitElement {
         }
       }
     })
+    this.cleanupCallbacks.push(unsubTyping)
 
     this.ws.connect()
+  }
+
+  private cleanupResources() {
+    // Run all cleanup callbacks
+    this.cleanupCallbacks.forEach(cb => cb())
+    this.cleanupCallbacks = []
+
+    // Disconnect WebSocket
+    if (this.ws) {
+      this.ws.disconnect()
+      this.ws = null
+    }
   }
 
   private updateConversationLastMessage(conversationId: string, message: Message) {
@@ -178,8 +233,217 @@ export class ReusableChat extends LitElement {
     })
   }
 
+  // ============================================
+  // Public JavaScript API
+  // ============================================
+
+  /**
+   * Open the chat window
+   */
+  public open(): void {
+    if (!this.isOpen) {
+      this.isOpen = true
+      this.emitOpen()
+    }
+  }
+
+  /**
+   * Close the chat window
+   */
+  public close(): void {
+    if (this.isOpen) {
+      this.isOpen = false
+      this.emitClose()
+    }
+  }
+
+  /**
+   * Toggle the chat window open/close state
+   */
+  public toggle(): void {
+    if (this.isOpen) {
+      this.close()
+    } else {
+      this.open()
+    }
+  }
+
+  /**
+   * Programmatically send a message to the currently selected conversation
+   * @param content The message content to send
+   * @returns Promise that resolves with the sent message or null if no conversation selected
+   */
+  public async sendMessage(content: string): Promise<Message | null> {
+    if (!this.api || !this.selectedConversation || !content.trim()) {
+      return null
+    }
+
+    const trimmedContent = content.trim()
+
+    // Create optimistic message
+    const optimisticMessage: Message = {
+      id: `optimistic-${Date.now()}`,
+      content: trimmedContent,
+      sender_id: this.userId,
+      sender: { id: this.userId, name: this.userName },
+      attachments: [],
+      created_at: new Date().toISOString(),
+      isOptimistic: true
+    }
+
+    this.messages = [...this.messages, optimisticMessage]
+    await this.updateComplete
+    this.scrollToBottom()
+
+    try {
+      const message = await this.api.sendMessage(this.selectedConversation.id, trimmedContent, [])
+      // Replace optimistic with real message
+      this.messages = this.messages.map(m =>
+        m.id === optimisticMessage.id ? message : m
+      )
+      this.emitSend(message, this.selectedConversation.id)
+      return message
+    } catch (error) {
+      // Mark as failed
+      this.messages = this.messages.map(m => {
+        if (m.id === optimisticMessage.id) {
+          return { ...m, isOptimistic: false, failed: true } as Message
+        }
+        return m
+      })
+      const err = error instanceof Error ? error : new Error('Failed to send message')
+      this.emitError(err, 'SEND_ERROR')
+      throw err
+    }
+  }
+
+  /**
+   * Update user information. Creates a new session with the updated info.
+   * @param userId User identifier
+   * @param userName User display name
+   * @param userEmail Optional email address
+   * @param userAvatar Optional avatar URL
+   */
+  public async setUser(
+    userId: string,
+    userName: string,
+    userEmail?: string,
+    userAvatar?: string
+  ): Promise<void> {
+    // Update properties
+    this.userId = userId
+    this.userName = userName
+    if (userEmail !== undefined) this.userEmail = userEmail
+    if (userAvatar !== undefined) this.userAvatar = userAvatar
+
+    // Clear existing session
+    storage.clearSession()
+    this.session = null
+    this.conversations = []
+    this.messages = []
+    this.selectedConversation = null
+
+    // Clean up WebSocket
+    this.cleanupResources()
+
+    // Reinitialize with new user
+    this.initialized = false
+    this.isLoading = true
+    await this.initialize()
+  }
+
+  /**
+   * Clean up and disconnect the widget completely
+   */
+  public destroy(): void {
+    this.cleanupResources()
+    storage.clearSession()
+    this.session = null
+    this.conversations = []
+    this.messages = []
+    this.selectedConversation = null
+    this.isOpen = false
+    this.wsConnected = false
+    this.unreadCount = 0
+    this.initialized = false
+  }
+
+  /**
+   * Get the current open/closed state
+   */
+  public get isOpened(): boolean {
+    return this.isOpen
+  }
+
+  /**
+   * Get the current connection state
+   */
+  public get isConnected(): boolean {
+    return this.wsConnected
+  }
+
+  /**
+   * Get the current unread message count
+   */
+  public get unreadMessages(): number {
+    return this.unreadCount
+  }
+
+  // ============================================
+  // Custom Events
+  // ============================================
+
+  private emitReady(): void {
+    this.dispatchEvent(new CustomEvent('rc-ready', {
+      bubbles: true,
+      composed: true
+    }))
+  }
+
+  private emitOpen(): void {
+    this.dispatchEvent(new CustomEvent('rc-open', {
+      bubbles: true,
+      composed: true
+    }))
+  }
+
+  private emitClose(): void {
+    this.dispatchEvent(new CustomEvent('rc-close', {
+      bubbles: true,
+      composed: true
+    }))
+  }
+
+  private emitMessage(message: Message, conversationId: string): void {
+    this.dispatchEvent(new CustomEvent('rc-message', {
+      bubbles: true,
+      composed: true,
+      detail: { message, conversationId }
+    }))
+  }
+
+  private emitSend(message: Message, conversationId: string): void {
+    this.dispatchEvent(new CustomEvent('rc-send', {
+      bubbles: true,
+      composed: true,
+      detail: { message, conversationId }
+    }))
+  }
+
+  private emitError(error: Error, code?: string): void {
+    this.dispatchEvent(new CustomEvent('rc-error', {
+      bubbles: true,
+      composed: true,
+      detail: { error, code }
+    }))
+  }
+
+  // ============================================
+  // Internal Event Handlers
+  // ============================================
+
   private toggleOpen() {
-    this.isOpen = !this.isOpen
+    this.toggle()
   }
 
   private async selectConversation(conv: Conversation) {
@@ -203,6 +467,8 @@ export class ReusableChat extends LitElement {
         this.unreadCount = this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)
       }
     } catch (error) {
+      const err = error instanceof Error ? error : new Error('Failed to load messages')
+      this.emitError(err, 'LOAD_ERROR')
       console.error('[Reusable Chat] Failed to load messages:', error)
     } finally {
       this.isLoadingMessages = false
@@ -269,7 +535,10 @@ export class ReusableChat extends LitElement {
       this.messages = this.messages.map(m =>
         m.id === optimisticMessage.id ? message : m
       )
+      this.emitSend(message, this.selectedConversation.id)
     } catch (error) {
+      const err = error instanceof Error ? error : new Error('Failed to send message')
+      this.emitError(err, 'SEND_ERROR')
       console.error('[Reusable Chat] Failed to send message:', error)
       // Mark as failed
       this.messages = this.messages.map(m => {
@@ -376,6 +645,10 @@ export class ReusableChat extends LitElement {
     this.lightboxImage = null
   }
 
+  // ============================================
+  // Utility Methods
+  // ============================================
+
   private formatTime(dateString: string): string {
     const date = new Date(dateString)
     const now = new Date()
@@ -411,6 +684,16 @@ export class ReusableChat extends LitElement {
     return `${others[0].name} and ${others.length - 1} others`
   }
 
+  private formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
+
+  // ============================================
+  // Render Methods
+  // ============================================
+
   private renderConversationList() {
     if (this.isLoading) {
       return html`
@@ -437,6 +720,7 @@ export class ReusableChat extends LitElement {
             </svg>
             <p class="empty-title">No conversations yet</p>
             <p class="empty-subtitle">Messages will appear here</p>
+            <slot name="empty"></slot>
           </div>
         </div>
       `
@@ -561,12 +845,6 @@ export class ReusableChat extends LitElement {
     `
   }
 
-  private formatFileSize(bytes: number): string {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
   private renderTypingIndicator() {
     if (this.typingUsers.size === 0) return nothing
 
@@ -649,6 +927,7 @@ export class ReusableChat extends LitElement {
             </svg>
           </button>
         </div>
+        <slot name="footer"></slot>
       </div>
     `
   }
@@ -672,14 +951,39 @@ export class ReusableChat extends LitElement {
   render() {
     const positionStyle = this.position === 'bottom-left' ? 'left: 20px;' : 'right: 20px;'
 
+    // Generate accent color styles if provided
+    const accentStyles = this.accentColor ? `
+      --rc-primary: ${this.accentColor};
+      --rc-primary-dark: ${this.accentColor};
+    ` : ''
+
     return html`
       <style>
         :host {
+          /* CSS Custom Properties - can be overridden from outside */
+          --rc-primary: var(--rc-primary-color, #667eea);
+          --rc-primary-dark: var(--rc-primary-color, #5a67d8);
+          --rc-secondary: var(--rc-secondary-color, #764ba2);
+          --rc-bg: var(--rc-background-color, ${this.theme === 'dark' ? '#1a202c' : '#ffffff'});
+          --rc-bg-secondary: ${this.theme === 'dark' ? '#2d3748' : '#f7fafc'};
+          --rc-text: var(--rc-text-color, ${this.theme === 'dark' ? '#f7fafc' : '#1a202c'});
+          --rc-text-secondary: ${this.theme === 'dark' ? '#a0aec0' : '#718096'};
+          --rc-border: var(--rc-border-color, ${this.theme === 'dark' ? '#4a5568' : '#e2e8f0'});
+          --rc-font: var(--rc-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+          --rc-radius: var(--rc-border-radius, 16px);
+          --rc-radius-sm: calc(var(--rc-border-radius, 16px) / 2);
+          --rc-shadow: var(--rc-shadow, 0 10px 40px rgba(0, 0, 0, 0.15));
+
+          ${accentStyles}
+
           position: fixed;
           bottom: 20px;
           ${positionStyle}
           z-index: 999999;
           font-family: var(--rc-font);
+          font-size: 14px;
+          line-height: 1.5;
+          color: var(--rc-text);
         }
 
         /* Bubble */
@@ -730,7 +1034,9 @@ export class ReusableChat extends LitElement {
           bottom: 80px;
           ${this.position === 'bottom-left' ? 'left: 0;' : 'right: 0;'}
           width: 380px;
-          height: 520px;
+          height: calc(100vh - 120px);
+          max-height: 600px;
+          min-height: 400px;
           background: var(--rc-bg);
           border-radius: var(--rc-radius);
           box-shadow: var(--rc-shadow);
@@ -746,8 +1052,6 @@ export class ReusableChat extends LitElement {
         @media (max-width: 420px) {
           .window {
             width: calc(100vw - 40px);
-            height: calc(100vh - 120px);
-            max-height: 600px;
           }
         }
 
@@ -809,6 +1113,15 @@ export class ReusableChat extends LitElement {
           height: 8px;
           border-radius: 50%;
           background: ${this.wsConnected ? '#34d399' : '#fbbf24'};
+        }
+
+        .header-slot {
+          display: flex;
+          align-items: center;
+        }
+
+        ::slotted([slot="header"]) {
+          margin-right: 8px;
         }
 
         .close-btn {
@@ -1371,6 +1684,12 @@ export class ReusableChat extends LitElement {
           color: var(--rc-text-secondary);
         }
 
+        /* Footer slot */
+        ::slotted([slot="footer"]) {
+          display: block;
+          margin-top: 8px;
+        }
+
         /* Branding */
         .branding {
           text-align: center;
@@ -1451,7 +1770,7 @@ export class ReusableChat extends LitElement {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
         `}
-        ${this.unreadCount > 0 ? html`<div class="badge">${this.unreadCount}</div>` : nothing}
+        ${this.unreadCount > 0 ? html`<div class="badge">${this.unreadCount > 99 ? '99+' : this.unreadCount}</div>` : nothing}
       </div>
 
       <div class="window">
@@ -1478,7 +1797,10 @@ export class ReusableChat extends LitElement {
               </div>
             </div>
           `}
-          <button class="close-btn" @click=${this.toggleOpen}>
+          <div class="header-slot">
+            <slot name="header"></slot>
+          </div>
+          <button class="close-btn" @click=${() => this.close()}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1503,6 +1825,15 @@ export class ReusableChat extends LitElement {
       ${this.renderLightbox()}
     `
   }
+}
+
+// TypeScript declarations for custom element and events
+declare global {
+  interface HTMLElementTagNameMap {
+    'reusable-chat': ReusableChat
+  }
+
+  interface HTMLElementEventMap extends ReusableChatEventMap {}
 }
 
 export default ReusableChat

@@ -12,10 +12,28 @@ class EmailGatewayService
 
     public function __construct()
     {
-        $this->url = config('services.email_gateway.url');
-        $this->apiKey = config('services.email_gateway.api_key');
+        $url = config('services.email_gateway.url');
+        $apiKey = config('services.email_gateway.api_key');
+
+        if (empty($url) || empty($apiKey)) {
+            throw new \RuntimeException('Email gateway configuration missing. Set EMAIL_GATEWAY_URL and EMAIL_GATEWAY_API_KEY.');
+        }
+
+        $this->url = $url;
+        $this->apiKey = $apiKey;
     }
 
+    /**
+     * Send an email via the email gateway service.
+     *
+     * @param string $to Recipient email address
+     * @param string $subject Email subject line
+     * @param string $htmlBody HTML version of email body
+     * @param string $textBody Plain text version of email body
+     * @param string $fromName Display name for sender
+     * @param string|null $replyTo Optional reply-to email address
+     * @return array{success: bool, message_id?: string, error?: string}
+     */
     public function send(
         string $to,
         string $subject,
@@ -25,16 +43,19 @@ class EmailGatewayService
         ?string $replyTo = null
     ): array {
         try {
-            $response = Http::withHeaders([
-                'X-API-Key' => $this->apiKey,
-            ])->post($this->url . '/send', [
-                'to' => $to,
-                'subject' => $subject,
-                'html_body' => $htmlBody,
-                'text_body' => $textBody,
-                'from_name' => $fromName,
-                'reply_to' => $replyTo,
-            ]);
+            $response = Http::timeout(10)
+                ->retry(3, 100, throw: false)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                ])
+                ->post($this->url . '/send', [
+                    'to' => $to,
+                    'subject' => $subject,
+                    'html_body' => $htmlBody,
+                    'text_body' => $textBody,
+                    'from_name' => $fromName,
+                    'reply_to' => $replyTo,
+                ]);
 
             if ($response->successful()) {
                 return [
@@ -55,11 +76,12 @@ class EmailGatewayService
         } catch (\Exception $e) {
             Log::error('Email gateway exception', [
                 'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => 'Failed to send email. Please try again later.',
             ];
         }
     }

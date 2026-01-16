@@ -43,7 +43,7 @@ return [
 
     'email_gateway' => [
         'url' => env('EMAIL_GATEWAY_URL', 'https://email-gateway-production.up.railway.app'),
-        'api_key' => env('EMAIL_GATEWAY_API_KEY', 'egw_live_vJetwlkKk-odOzkkbIqrlPUD5enBW0FH'),
+        'api_key' => env('EMAIL_GATEWAY_API_KEY'),
     ],
 
 ];
