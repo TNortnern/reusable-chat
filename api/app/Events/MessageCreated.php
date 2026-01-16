@@ -16,8 +16,8 @@ class MessageCreated implements ShouldBroadcast
     public function __construct(
         public Message $message
     ) {
-        // Eager load relationships for broadcasting
-        $this->message->load(['conversation', 'sender', 'attachments']);
+        // Eager load relationships for broadcasting and listeners
+        $this->message->load(['conversation.workspace.settings', 'sender', 'attachments']);
     }
 
     public function broadcastOn(): array
