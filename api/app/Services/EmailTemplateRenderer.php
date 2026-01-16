@@ -27,7 +27,18 @@ class EmailTemplateRenderer
             }
 
             // Handle simple variables
-            return isset($variables[$key]) ? (string) $variables[$key] : '';
+            if (!isset($variables[$key])) {
+                return '';
+            }
+
+            $value = $variables[$key];
+
+            // Handle arrays gracefully
+            if (is_array($value)) {
+                return 'Array';
+            }
+
+            return (string) $value;
         }, $template);
     }
 
@@ -48,6 +59,11 @@ class EmailTemplateRenderer
                 return '';
             }
             $value = $value[$segment];
+        }
+
+        // Handle arrays gracefully
+        if (is_array($value)) {
+            return 'Array';
         }
 
         return (string) $value;

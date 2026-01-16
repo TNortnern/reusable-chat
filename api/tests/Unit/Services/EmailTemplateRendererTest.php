@@ -56,17 +56,17 @@ class EmailTemplateRendererTest extends TestCase
         $renderer = new EmailTemplateRenderer();
 
         $result = $renderer->render(
-            template: 'Items: {{#items}}{{name}}{{/items}}',
+            template: 'Items: {{items}}, Name: {{name}}',
             variables: [
-                'items' => [
-                    ['name' => 'Apple'],
-                    ['name' => 'Orange'],
-                ],
+                'items' => ['Apple', 'Orange'], // Array value
+                'name' => 'Bob',
             ]
         );
 
-        // Note: This test is for future array iteration support
-        // For now, just ensure arrays are handled gracefully
+        // Arrays should be cast to string or handled gracefully
         $this->assertIsString($result);
+        $this->assertStringContainsString('Name: Bob', $result);
+        // Array might be converted to empty string or "Array"
+        $this->assertMatchesRegularExpression('/Items: (Array|), Name: Bob/', $result);
     }
 }
