@@ -1693,7 +1693,7 @@ echo.private(`conversation.${conversationId}`)
             <div class="email-feature">
               <span class="email-feature-icon">✏️</span>
               <h4>Template Variables</h4>
-              <p>Dynamic content with {{sender.name}} and more</p>
+              <p v-pre>Dynamic content with {{sender.name}} and more</p>
             </div>
             <div class="email-feature">
               <span class="email-feature-icon">🚀</span>
@@ -1778,35 +1778,35 @@ echo.private(`conversation.${conversationId}`)
 
           <h3>Available Variables</h3>
           <div class="variables-grid">
-            <div class="variable-card">
+            <div class="variable-card" v-pre>
               <code>{{sender.name}}</code>
               <span>Message sender's name</span>
             </div>
-            <div class="variable-card">
+            <div class="variable-card" v-pre>
               <code>{{sender.email}}</code>
               <span>Sender's email address</span>
             </div>
-            <div class="variable-card">
+            <div class="variable-card" v-pre>
               <code>{{recipient.name}}</code>
               <span>Email recipient's name</span>
             </div>
-            <div class="variable-card">
+            <div class="variable-card" v-pre>
               <code>{{message.content}}</code>
               <span>Message text content</span>
             </div>
-            <div class="variable-card">
+            <div class="variable-card" v-pre>
               <code>{{conversation.name}}</code>
               <span>Chat conversation title</span>
             </div>
-            <div class="variable-card">
+            <div class="variable-card" v-pre>
               <code>{{conversation_url}}</code>
               <span>Deep link to conversation</span>
             </div>
-            <div class="variable-card">
+            <div class="variable-card" v-pre>
               <code>{{unread_count}}</code>
               <span>Number of unread messages</span>
             </div>
-            <div class="variable-card">
+            <div class="variable-card" v-pre>
               <code>{{workspace.name}}</code>
               <span>Your workspace name</span>
             </div>
