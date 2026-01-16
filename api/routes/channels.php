@@ -52,3 +52,17 @@ Broadcast::channel('user.{userId}', function ($user, string $userId) {
     // Admins don't subscribe to user channels
     return false;
 });
+
+// Workspace channel - only admins from that workspace can subscribe
+Broadcast::channel('workspace.{workspaceId}', function ($user, string $workspaceId) {
+    if ($user instanceof Admin) {
+        // Verify admin belongs to this workspace
+        return $user->workspaceMemberships()
+            ->where('workspace_id', $workspaceId)
+            ->exists();
+    }
+
+    // Only admins can subscribe to workspace channels
+    // ChatUsers continue using conversation.{id} channels
+    return false;
+});
