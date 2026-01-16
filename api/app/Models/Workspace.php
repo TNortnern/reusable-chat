@@ -59,4 +59,9 @@ class Workspace extends Model
     {
         return $this->hasMany(PublicKey::class);
     }
+
+    public function emailTemplates(): HasMany
+    {
+        return $this->hasMany(EmailTemplate::class);
+    }
 }

@@ -17,13 +17,15 @@ class WorkspaceSettings extends Model
     protected $fillable = [
         'workspace_id', 'read_receipts_enabled', 'online_status_enabled',
         'typing_indicators_enabled', 'file_size_limit_mb', 'rate_limit_per_minute',
-        'webhook_url', 'webhook_secret',
+        'webhook_url', 'webhook_secret', 'email_notifications', 'email_branding',
     ];
 
     protected $casts = [
         'read_receipts_enabled' => 'boolean',
         'online_status_enabled' => 'boolean',
         'typing_indicators_enabled' => 'boolean',
+        'email_notifications' => 'array',
+        'email_branding' => 'array',
     ];
 
     public function workspace(): BelongsTo
