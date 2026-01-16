@@ -29,6 +29,14 @@ class SendMissedMessageEmail implements ShouldQueue
         $workspace = $this->message->conversation->workspace;
         $settings = $workspace->settings;
 
+        // Check if sender exists
+        if (!$this->message->sender) {
+            Log::warning('Cannot send missed message email: sender not found', [
+                'message_id' => $this->message->id,
+            ]);
+            return;
+        }
+
         // Check if email notifications are enabled
         $emailNotifications = $settings?->email_notifications ?? [];
         if (!($emailNotifications['enabled'] ?? false)) {
@@ -72,14 +80,15 @@ class SendMissedMessageEmail implements ShouldQueue
             ],
         ];
 
+        // Render templates once (same for all recipients)
+        $subject = $renderer->render($template->subject_template, $variables);
+        $htmlBody = $renderer->render($template->body_html, $variables);
+        $textBody = $renderer->render($template->body_text, $variables);
+
+        $branding = $settings?->email_branding ?? [];
+
         // Send email to each recipient
         foreach ($recipients as $recipient) {
-            $subject = $renderer->render($template->subject_template, $variables);
-            $htmlBody = $renderer->render($template->body_html, $variables);
-            $textBody = $renderer->render($template->body_text, $variables);
-
-            $branding = $settings?->email_branding ?? [];
-
             $result = $emailGateway->send(
                 to: $recipient->email,
                 subject: $subject,

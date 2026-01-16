@@ -61,10 +61,12 @@ class SendMissedMessageEmailTest extends TestCase
         $this->mock(EmailGatewayService::class)
             ->shouldReceive('send')
             ->once()
-            ->withArgs(function ($to, $subject, $htmlBody, $textBody) use ($recipient, $sender) {
+            ->withArgs(function ($to, $subject, $htmlBody, $textBody, $fromName, $replyTo) use ($recipient, $sender) {
                 return $to === 'recipient@test.com' &&
                        str_contains($subject, $sender->name) &&
-                       str_contains($htmlBody, 'Hello there');
+                       str_contains($htmlBody, 'Hello there') &&
+                       $fromName === 'Test App' &&
+                       $replyTo === 'support@test.com';
             })
             ->andReturn(['success' => true, 'message_id' => 'test_123']);
 
