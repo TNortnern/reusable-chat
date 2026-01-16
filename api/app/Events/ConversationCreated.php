@@ -14,14 +14,16 @@ class ConversationCreated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public Conversation $conversation,
-        public string $userId
-    ) {}
+        public Conversation $conversation
+    ) {
+        // Eager load relationships
+        $this->conversation->load(['creator', 'participants']);
+    }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('user.' . $this->userId),
+            new PrivateChannel('workspace.' . $this->conversation->workspace_id),
         ];
     }
 
@@ -36,11 +38,18 @@ class ConversationCreated implements ShouldBroadcast
             'id' => $this->conversation->id,
             'type' => $this->conversation->type,
             'name' => $this->conversation->name,
+            'workspace_id' => $this->conversation->workspace_id,
+            'created_by' => [
+                'id' => $this->conversation->creator->id,
+                'name' => $this->conversation->creator->name,
+                'email' => $this->conversation->creator->email,
+            ],
             'participants' => $this->conversation->participants->map(fn($p) => [
                 'id' => $p->id,
                 'name' => $p->name,
-                'avatar_url' => $p->avatar_url,
+                'role' => $p->pivot->role,
             ]),
+            'created_at' => $this->conversation->created_at->toIso8601String(),
         ];
     }
 }
