@@ -15,12 +15,16 @@ class MessageCreated implements ShouldBroadcast
 
     public function __construct(
         public Message $message
-    ) {}
+    ) {
+        // Eager load relationships for broadcasting
+        $this->message->load(['conversation', 'sender', 'attachments']);
+    }
 
     public function broadcastOn(): array
     {
         return [
             new PrivateChannel('conversation.' . $this->message->conversation_id),
+            new PrivateChannel('workspace.' . $this->message->conversation->workspace_id),
         ];
     }
 
@@ -31,13 +35,25 @@ class MessageCreated implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
+        $conversation = $this->message->conversation;
+
         return [
             'id' => $this->message->id,
             'content' => $this->message->content,
             'sender' => [
                 'id' => $this->message->sender->id,
                 'name' => $this->message->sender->name,
+                'email' => $this->message->sender->email,
                 'avatar_url' => $this->message->sender->avatar_url,
+            ],
+            'conversation' => [
+                'id' => $conversation->id,
+                'type' => $conversation->type,
+                'name' => $conversation->name,
+                'workspace_id' => $conversation->workspace_id,
+                'participant_count' => $conversation->participants()->count(),
+                'created_by' => $conversation->created_by,
+                'created_at' => $conversation->created_at->toIso8601String(),
             ],
             'attachments' => $this->message->attachments->map(fn($a) => [
                 'id' => $a->id,
@@ -46,7 +62,7 @@ class MessageCreated implements ShouldBroadcast
                 'url' => $a->url,
                 'size' => $a->size,
             ]),
-            'created_at' => $this->message->created_at->toISOString(),
+            'created_at' => $this->message->created_at->toIso8601String(),
         ];
     }
 }
