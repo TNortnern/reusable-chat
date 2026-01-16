@@ -15,6 +15,7 @@ class MessageDeleted implements ShouldBroadcast
     public function __construct(
         public string $messageId,
         public string $conversationId,
+        public string $workspaceId,
         public string $deletedBy
     ) {}
 
@@ -22,6 +23,7 @@ class MessageDeleted implements ShouldBroadcast
     {
         return [
             new PrivateChannel('conversation.' . $this->conversationId),
+            new PrivateChannel('workspace.' . $this->workspaceId),
         ];
     }
 
@@ -34,6 +36,8 @@ class MessageDeleted implements ShouldBroadcast
     {
         return [
             'id' => $this->messageId,
+            'conversation_id' => $this->conversationId,
+            'workspace_id' => $this->workspaceId,
             'deleted_by' => $this->deletedBy,
         ];
     }

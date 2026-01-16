@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Dashboard;
 
+use App\Events\MessageDeleted;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -52,7 +53,17 @@ class ConversationController extends Controller
             $q->where('workspace_id', $workspace->id);
         })->where('id', $msgId)->firstOrFail();
 
+        $conversationId = $message->conversation_id;
+        $deletedBy = $request->user()->id;
+
         $message->delete(); // Soft delete
+
+        broadcast(new MessageDeleted(
+            $msgId,
+            $conversationId,
+            $workspace->id,
+            $deletedBy
+        ));
 
         return response()->json(null, 204);
     }
