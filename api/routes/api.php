@@ -32,6 +32,9 @@ use App\Http\Controllers\Embed\EmbedController;
 
 // Consumer Backend API (v1) - API Key Auth
 Route::prefix('v1')->middleware(['api.key', 'throttle:api-v1'])->group(function () {
+    // Workspaces
+    Route::post('/workspaces/{workspace}/realtime/token', [App\Http\Controllers\Api\V1\WorkspaceController::class, 'realtimeToken']);
+
     // Sessions
     Route::post('/sessions', [SessionController::class, 'store']);
     Route::delete('/sessions/{id}', [SessionController::class, 'destroy']);

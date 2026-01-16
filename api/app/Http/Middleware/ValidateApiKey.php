@@ -27,7 +27,10 @@ class ValidateApiKey
         }
 
         $key->update(['last_used_at' => now()]);
-        $request->merge(['workspace' => $key->workspace]);
+
+        // Store workspace in request attributes (not data bag to avoid serialization issues)
+        $request->attributes->set('workspace', $key->workspace);
+        $request->attributes->set('api_key', $key);
 
         return $next($request);
     }

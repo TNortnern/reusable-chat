@@ -22,6 +22,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Add macro to access workspace from request attributes
+        Request::macro('workspace', function () {
+            return $this->attributes->get('workspace');
+        });
+
         $this->configureRateLimiting();
     }
 
@@ -79,8 +84,8 @@ class AppServiceProvider extends ServiceProvider
 
         // API v1 endpoints: 100 per minute per API key
         RateLimiter::for('api-v1', function (Request $request) {
-            // The workspace is set by ValidateApiKey middleware
-            $workspace = $request->workspace;
+            // The workspace is set by ValidateApiKey middleware as an attribute
+            $workspace = $request->workspace();
             $key = $workspace ? 'workspace:' . $workspace->id : $request->ip();
 
             return Limit::perMinute(100)->by($key)->response(function () {
