@@ -49,7 +49,9 @@ const navigation = [
     title: 'Real-time',
     items: [
       { id: 'websocket', label: 'WebSocket Events' },
+      { id: 'workspace-monitoring', label: 'Workspace Monitoring' },
       { id: 'typing', label: 'Typing Indicators' },
+      { id: 'email-notifications', label: 'Email Notifications' },
     ]
   },
   {
@@ -277,6 +279,108 @@ echo.private(\`conversation.\${conversationId}\`)
   .listen('.user.typing', ({ user_id, name, is_typing }) => {
     console.log(\`\${name} is \${is_typing ? '' : 'not '}typing\`)
   })`,
+  workspaceRealtimeToken: `curl -X POST https://api.reusable-chat.com/api/v1/workspaces/{workspace_id}/realtime/token \\
+  -H 'X-API-Key: sk_your_api_key' \\
+  -H 'Content-Type: application/json'`,
+  workspaceMonitoring: `import Echo from 'laravel-echo'
+import Pusher from 'pusher-js'
+
+// Step 1: Get realtime token from your backend
+const response = await fetch('/api/v1/workspaces/abc-123/realtime/token', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'sk_your_api_key',
+  }
+})
+const { token, workspace_id } = await response.json()
+
+// Step 2: Connect to WebSocket with token
+const echo = new Echo({
+  broadcaster: 'pusher',
+  key: 'reusable-chat-key',
+  wsHost: 'api-production-de24c.up.railway.app',
+  wsPort: 443,
+  wssPort: 443,
+  forceTLS: true,
+  encrypted: true,
+  disableStats: true,
+  enabledTransports: ['ws', 'wss'],
+  authEndpoint: 'https://api-production-de24c.up.railway.app/api/v1/broadcasting/auth',
+  auth: {
+    headers: {
+      Authorization: \`Bearer \${token}\`
+    }
+  }
+})
+
+// Step 3: Subscribe to workspace channel
+echo.private(\`workspace.\${workspace_id}\`)
+  .listen('.message.created', (event) => {
+    console.log('New message in workspace:', event)
+    // Send to CRM, trigger workflow, log to analytics, etc.
+  })
+  .listen('.conversation.created', (event) => {
+    console.log('New conversation:', event)
+    // Notify team, create ticket, etc.
+  })
+  .listen('.message.deleted', (event) => {
+    console.log('Message deleted:', event)
+  })`,
+  workspaceEventPayload: `{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "content": "Hello there!",
+  "sender": {
+    "id": "user_uuid",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "avatar_url": "https://..."
+  },
+  "conversation": {
+    "id": "conv_uuid",
+    "type": "1on1",
+    "name": "Support Chat",
+    "workspace_id": "workspace_uuid",
+    "participant_count": 2,
+    "created_by": "user_uuid",
+    "created_at": "2026-01-16T10:00:00Z"
+  },
+  "attachments": [
+    {
+      "id": "attach_uuid",
+      "name": "screenshot.png",
+      "type": "image/png",
+      "url": "https://cdn.reusable-chat.com/...",
+      "size": 102400
+    }
+  ],
+  "created_at": "2026-01-16T10:30:00Z"
+}`,
+  emailSettings: `{
+  "email_notifications": {
+    "enabled": true,
+    "triggers": {
+      "missed_message_1on1_minutes": 15,
+      "missed_message_group_minutes": 30,
+      "notify_on_participant_join": true,
+      "notify_on_participant_leave": false,
+      "notify_on_new_inquiry": true
+    }
+  },
+  "email_branding": {
+    "logo_url": "https://yoursite.com/logo.png",
+    "brand_color": "#3b82f6",
+    "from_name": "MyApp Support",
+    "reply_to": "support@yoursite.com",
+    "footer_text": "© 2026 MyApp. Unsubscribe anytime."
+  }
+}`,
+  emailTemplate: `{
+  "event_type": "missed_message_1on1",
+  "subject_template": "New message from {{sender.name}}",
+  "body_html": "<p>Hi {{recipient.name}},</p><p>{{sender.name}} sent you a message:</p><blockquote>{{message.content}}</blockquote><p><a href='{{conversation_url}}'>Reply now</a></p>",
+  "body_text": "Hi {{recipient.name}}, {{sender.name}} sent: {{message.content}}. Reply at {{conversation_url}}",
+  "variables": ["sender.name", "recipient.name", "message.content", "conversation_url"]
+}`,
 }
 
 // Scroll to section
@@ -1322,6 +1426,208 @@ echo.private(`conversation.${conversationId}`)
           </div>
         </section>
 
+        <!-- Workspace Monitoring -->
+        <section id="workspace-monitoring" class="doc-section workspace-monitoring-section">
+          <div class="section-header gradient-header">
+            <span class="section-tag monitoring-tag">Backend Integration</span>
+            <h2>🔍 Workspace Monitoring</h2>
+            <p class="section-lead">
+              Monitor all conversations in your workspace from your backend. Perfect for CRM integrations,
+              analytics, automated workflows, and customer support dashboards.
+            </p>
+          </div>
+
+          <div class="monitoring-features">
+            <div class="monitoring-feature">
+              <div class="feature-icon-lg">⚡</div>
+              <h4>Real-time Events</h4>
+              <p>Receive instant WebSocket notifications for all activity across your workspace</p>
+            </div>
+            <div class="monitoring-feature">
+              <div class="feature-icon-lg">📦</div>
+              <h4>Rich Payloads</h4>
+              <p>Events include full conversation context - no additional API calls needed</p>
+            </div>
+            <div class="monitoring-feature">
+              <div class="feature-icon-lg">🔒</div>
+              <h4>Secure Tokens</h4>
+              <p>24-hour JWT tokens with workspace-level authorization</p>
+            </div>
+          </div>
+
+          <h3>How It Works</h3>
+          <div class="workflow-steps">
+            <div class="workflow-step">
+              <div class="workflow-number">1</div>
+              <div class="workflow-content">
+                <h4>Generate Token</h4>
+                <p>Request a realtime token using your API key</p>
+              </div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+              <div class="workflow-number">2</div>
+              <div class="workflow-content">
+                <h4>Connect Echo</h4>
+                <p>Initialize Laravel Echo with the token</p>
+              </div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+              <div class="workflow-number">3</div>
+              <div class="workflow-content">
+                <h4>Subscribe & Listen</h4>
+                <p>Monitor workspace channel for events</p>
+              </div>
+            </div>
+          </div>
+
+          <h3>Step 1: Generate Realtime Token</h3>
+          <p>Call this endpoint from your backend to get a WebSocket authentication token:</p>
+
+          <div class="endpoint">
+            <div class="endpoint-header">
+              <span class="http-method post">POST</span>
+              <code>/api/v1/workspaces/{id}/realtime/token</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span class="code-lang">Request</span>
+                <button
+                  class="copy-btn llm"
+                  @click="copyForLLM(codeSnippets.workspaceRealtimeToken, 'Generate a realtime WebSocket token for workspace monitoring. This token is used to authenticate your backend service to subscribe to the workspace channel. Token expires in 24 hours. Only workspace admins can generate tokens.')"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  Copy for LLM
+                </button>
+              </div>
+              <pre><code>{{ codeSnippets.workspaceRealtimeToken }}</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span class="code-lang">Response</span>
+              </div>
+              <pre><code>{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expires_at": "2026-01-17T10:00:00Z",
+  "workspace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "channels": ["private-workspace.{workspace_id}"]
+}</code></pre>
+            </div>
+          </div>
+
+          <h3>Step 2 & 3: Connect and Subscribe</h3>
+          <p>Use the token to connect to WebSocket and subscribe to workspace events:</p>
+
+          <div class="code-block highlight-block">
+            <div class="code-header">
+              <span class="code-lang">JavaScript (Complete Example)</span>
+              <button
+                class="copy-btn llm"
+                @click="copyForLLM(codeSnippets.workspaceMonitoring, 'Complete workspace monitoring setup. This code: 1) Gets a realtime token from your API, 2) Connects to WebSocket using Laravel Echo, 3) Subscribes to the workspace channel to receive all messages, conversations, and deletions across your entire workspace. Use this in your backend Node.js service to sync data to your CRM, trigger workflows, or log activity.')"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Copy for LLM
+              </button>
+            </div>
+            <pre><code>{{ codeSnippets.workspaceMonitoring }}</code></pre>
+          </div>
+
+          <h3>Event Types</h3>
+          <div class="api-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Trigger</th>
+                  <th>Use Case</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>message.created</code></td>
+                  <td>New message sent in any conversation</td>
+                  <td>Sync to CRM, sentiment analysis, auto-responses</td>
+                </tr>
+                <tr>
+                  <td><code>conversation.created</code></td>
+                  <td>New conversation started</td>
+                  <td>Create support tickets, notify team, assign agents</td>
+                </tr>
+                <tr>
+                  <td><code>message.deleted</code></td>
+                  <td>Message removed by user</td>
+                  <td>Audit logs, compliance tracking</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Event Payload Example</h3>
+          <p>All events include full conversation context to minimize API calls:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">message.created Event</span>
+              <button
+                class="copy-btn"
+                @click="copyToClipboard(codeSnippets.workspaceEventPayload, 'Event payload')"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copy
+              </button>
+            </div>
+            <pre><code>{{ codeSnippets.workspaceEventPayload }}</code></pre>
+          </div>
+
+          <div class="info-box">
+            <div class="info-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </div>
+            <div class="info-content">
+              <strong>Performance Tip:</strong> Events are broadcast to both conversation participants (for the widget)
+              and the workspace channel (for backend monitoring) simultaneously. Rich payloads include eager-loaded
+              relationships to prevent N+1 queries.
+            </div>
+          </div>
+
+          <div class="use-case-grid">
+            <div class="use-case">
+              <h4>🎯 CRM Integration</h4>
+              <p>Sync conversations to Salesforce, HubSpot, or your custom CRM in real-time</p>
+            </div>
+            <div class="use-case">
+              <h4>📊 Analytics</h4>
+              <p>Track message volume, response times, and conversation patterns</p>
+            </div>
+            <div class="use-case">
+              <h4>🤖 Automation</h4>
+              <p>Trigger workflows based on keywords, sentiment, or user behavior</p>
+            </div>
+            <div class="use-case">
+              <h4>📱 Notifications</h4>
+              <p>Send custom alerts via Slack, email, or push notifications</p>
+            </div>
+          </div>
+        </section>
+
         <!-- Typing Indicators -->
         <section id="typing" class="doc-section">
           <h2>Typing Indicators</h2>
@@ -1358,6 +1664,211 @@ echo.private(`conversation.${conversationId}`)
             </div>
             <div class="info-content">
               <strong>Best Practice:</strong> Send <code>is_typing: true</code> on input, then <code>is_typing: false</code> after 2 seconds of inactivity or when the message is sent.
+            </div>
+          </div>
+        </section>
+
+        <!-- Email Notifications -->
+        <section id="email-notifications" class="doc-section email-notifications-section">
+          <div class="section-header gradient-header">
+            <span class="section-tag email-tag">Automated Notifications</span>
+            <h2>📧 Email Notifications</h2>
+            <p class="section-lead">
+              Send automated email notifications when users miss messages. Fully customizable templates
+              with your branding, triggers, and timing.
+            </p>
+          </div>
+
+          <div class="email-features-grid">
+            <div class="email-feature">
+              <span class="email-feature-icon">🎨</span>
+              <h4>Custom Branding</h4>
+              <p>Your logo, colors, and footer in every email</p>
+            </div>
+            <div class="email-feature">
+              <span class="email-feature-icon">⏱️</span>
+              <h4>Flexible Triggers</h4>
+              <p>Configure delays for 1-on-1, group chats, and more</p>
+            </div>
+            <div class="email-feature">
+              <span class="email-feature-icon">✏️</span>
+              <h4>Template Variables</h4>
+              <p>Dynamic content with {{sender.name}} and more</p>
+            </div>
+            <div class="email-feature">
+              <span class="email-feature-icon">🚀</span>
+              <h4>Queued & Reliable</h4>
+              <p>Background processing with automatic retries</p>
+            </div>
+          </div>
+
+          <h3>Configuration</h3>
+          <p>Email settings are stored in your workspace configuration:</p>
+
+          <div class="code-block highlight-block">
+            <div class="code-header">
+              <span class="code-lang">Workspace Settings JSON</span>
+              <button
+                class="copy-btn llm"
+                @click="copyForLLM(codeSnippets.emailSettings, 'Email notification configuration for workspace. Set enabled: true to activate. Configure trigger delays in minutes - missed_message_1on1_minutes controls how long to wait before sending missed message emails for direct chats. Email branding customizes the appearance with your logo, colors, from name, reply-to address, and footer text.')"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Copy for LLM
+              </button>
+            </div>
+            <pre><code>{{ codeSnippets.emailSettings }}</code></pre>
+          </div>
+
+          <h3>Trigger Types</h3>
+          <div class="trigger-table">
+            <div class="trigger-row">
+              <div class="trigger-name">
+                <code>missed_message_1on1</code>
+                <span class="trigger-badge">15 min default</span>
+              </div>
+              <p>Sent when a user hasn't read a direct message after the configured delay</p>
+            </div>
+            <div class="trigger-row">
+              <div class="trigger-name">
+                <code>missed_message_group</code>
+                <span class="trigger-badge">30 min default</span>
+              </div>
+              <p>Sent for unread group chat messages (longer delay to reduce noise)</p>
+            </div>
+            <div class="trigger-row">
+              <div class="trigger-name">
+                <code>new_participant</code>
+                <span class="trigger-badge">instant</span>
+              </div>
+              <p>Notify when someone joins a conversation you're in</p>
+            </div>
+            <div class="trigger-row">
+              <div class="trigger-name">
+                <code>new_inquiry</code>
+                <span class="trigger-badge">instant</span>
+              </div>
+              <p>Alert for first messages in new conversations (support/sales use case)</p>
+            </div>
+          </div>
+
+          <h3>Email Templates</h3>
+          <p>Customize templates with variables for dynamic content:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">Template Structure</span>
+              <button
+                class="copy-btn llm"
+                @click="copyForLLM(codeSnippets.emailTemplate, 'Email template structure. event_type determines which trigger uses this template. subject_template and body_html support {{variable}} syntax for dynamic content. Available variables include sender.name, sender.email, recipient.name, message.content, conversation.name, and conversation_url. Separate body_text version for plain-text email clients.')"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Copy for LLM
+              </button>
+            </div>
+            <pre><code>{{ codeSnippets.emailTemplate }}</code></pre>
+          </div>
+
+          <h3>Available Variables</h3>
+          <div class="variables-grid">
+            <div class="variable-card">
+              <code>{{sender.name}}</code>
+              <span>Message sender's name</span>
+            </div>
+            <div class="variable-card">
+              <code>{{sender.email}}</code>
+              <span>Sender's email address</span>
+            </div>
+            <div class="variable-card">
+              <code>{{recipient.name}}</code>
+              <span>Email recipient's name</span>
+            </div>
+            <div class="variable-card">
+              <code>{{message.content}}</code>
+              <span>Message text content</span>
+            </div>
+            <div class="variable-card">
+              <code>{{conversation.name}}</code>
+              <span>Chat conversation title</span>
+            </div>
+            <div class="variable-card">
+              <code>{{conversation_url}}</code>
+              <span>Deep link to conversation</span>
+            </div>
+            <div class="variable-card">
+              <code>{{unread_count}}</code>
+              <span>Number of unread messages</span>
+            </div>
+            <div class="variable-card">
+              <code>{{workspace.name}}</code>
+              <span>Your workspace name</span>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </div>
+            <div class="info-content">
+              <strong>Smart Filtering:</strong> Emails are only sent to participants who: (1) haven't read the message,
+              (2) have a valid email address, (3) aren't the message sender, (4) haven't muted the conversation.
+              Anonymous users never receive emails.
+            </div>
+          </div>
+
+          <div class="email-workflow">
+            <h3>How It Works</h3>
+            <div class="workflow-diagram">
+              <div class="workflow-box">
+                <div class="workflow-box-title">Message Sent</div>
+                <p>User sends a message in conversation</p>
+              </div>
+              <div class="workflow-arrow-down">↓</div>
+              <div class="workflow-box">
+                <div class="workflow-box-title">Event Listener</div>
+                <p>MessageCreated event triggers listener</p>
+              </div>
+              <div class="workflow-arrow-down">↓</div>
+              <div class="workflow-box">
+                <div class="workflow-box-title">Delayed Job</div>
+                <p>Job scheduled after configured delay (e.g., 15 min)</p>
+              </div>
+              <div class="workflow-arrow-down">↓</div>
+              <div class="workflow-box">
+                <div class="workflow-box-title">Check Read Status</div>
+                <p>Verify message is still unread</p>
+              </div>
+              <div class="workflow-arrow-down">↓</div>
+              <div class="workflow-box success-box">
+                <div class="workflow-box-title">Send Email</div>
+                <p>Render template & send via email gateway</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-box warning">
+            <div class="info-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="info-content">
+              <strong>Coming Soon:</strong> Dashboard UI for managing email templates and settings. Currently,
+              templates are seeded automatically and settings can be configured via API. Contact support for
+              custom template design.
             </div>
           </div>
         </section>
@@ -2264,5 +2775,390 @@ code {
 
 .footer-links span {
   color: var(--docs-border);
+}
+
+/* ===== Workspace Monitoring Section ===== */
+.workspace-monitoring-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.workspace-monitoring-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  animation: pulse 8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.gradient-header h2 {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 36px;
+}
+
+.monitoring-tag {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+}
+
+.monitoring-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.monitoring-feature {
+  padding: 20px;
+  background: linear-gradient(135deg, var(--docs-surface) 0%, var(--docs-surface-2) 100%);
+  border: 1px solid var(--docs-border);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.monitoring-feature:hover {
+  transform: translateY(-4px);
+  border-color: var(--docs-accent);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+}
+
+.feature-icon-lg {
+  font-size: 32px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.workflow-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 32px 0;
+  padding: 32px;
+  background: var(--docs-surface);
+  border: 1px solid var(--docs-border);
+  border-radius: 16px;
+  flex-wrap: wrap;
+}
+
+.workflow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.workflow-number {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--docs-accent), #8b5cf6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 20px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.workflow-content h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: var(--docs-text);
+  text-align: center;
+}
+
+.workflow-content p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--docs-text-muted);
+  text-align: center;
+}
+
+.workflow-arrow {
+  color: var(--docs-accent);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.highlight-block {
+  border: 2px solid var(--docs-accent);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+  animation: highlight-glow 2s ease-in-out infinite;
+}
+
+@keyframes highlight-glow {
+  0%, 100% { box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15); }
+  50% { box-shadow: 0 8px 32px rgba(59, 130, 246, 0.25); }
+}
+
+.use-case-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.use-case {
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(59, 130, 246, 0.05));
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.use-case:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+.use-case h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--docs-text);
+}
+
+.use-case p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--docs-text-secondary);
+}
+
+/* ===== Email Notifications Section ===== */
+.email-notifications-section {
+  position: relative;
+}
+
+.email-notifications-section::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  animation: pulse 10s ease-in-out infinite;
+}
+
+.email-tag {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(139, 92, 246, 0.2));
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  color: #f472b6;
+}
+
+.email-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.email-feature {
+  padding: 20px;
+  background: var(--docs-surface);
+  border: 1px solid var(--docs-border);
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.email-feature:hover {
+  border-color: #ec4899;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.15);
+}
+
+.email-feature-icon {
+  font-size: 36px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.email-feature h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.email-feature p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.trigger-table {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.trigger-row {
+  padding: 20px;
+  background: var(--docs-surface);
+  border: 1px solid var(--docs-border);
+  border-left: 4px solid var(--docs-accent);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.trigger-row:hover {
+  border-left-color: #ec4899;
+  background: var(--docs-surface-2);
+}
+
+.trigger-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.trigger-name code {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.trigger-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  background: rgba(139, 92, 246, 0.15);
+  border-radius: 6px;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.trigger-row p {
+  margin: 0;
+  font-size: 14px;
+  padding-left: 16px;
+}
+
+.variables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.variable-card {
+  padding: 16px;
+  background: var(--docs-surface);
+  border: 1px solid var(--docs-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.variable-card:hover {
+  border-color: var(--docs-accent);
+  background: var(--docs-surface-2);
+}
+
+.variable-card code {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ec4899;
+}
+
+.variable-card span {
+  font-size: 12px;
+  color: var(--docs-text-muted);
+}
+
+.email-workflow {
+  margin: 48px 0;
+  padding: 32px;
+  background: var(--docs-surface);
+  border: 1px solid var(--docs-border);
+  border-radius: 16px;
+}
+
+.workflow-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.workflow-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  background: var(--docs-surface-2);
+  border: 2px solid var(--docs-border);
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.workflow-box:hover {
+  border-color: var(--docs-accent);
+  transform: scale(1.02);
+}
+
+.workflow-box.success-box {
+  border-color: var(--docs-success);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.workflow-box-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--docs-text);
+  margin-bottom: 8px;
+}
+
+.workflow-box p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--docs-text-secondary);
+}
+
+.workflow-arrow-down {
+  font-size: 24px;
+  color: var(--docs-accent);
+  font-weight: 700;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .workflow-steps {
+    flex-direction: column;
+  }
+
+  .workflow-arrow {
+    transform: rotate(90deg);
+  }
+
+  .monitoring-features,
+  .email-features-grid,
+  .use-case-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .variables-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
