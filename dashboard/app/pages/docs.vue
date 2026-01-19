@@ -9,11 +9,31 @@ definePageMeta({
   layout: false
 })
 
+// Load the reusable-chat-inline widget
+useHead({
+  script: [
+    {
+      src: '/widget/dist/reusable-chat-inline.js',
+      type: 'module',
+      defer: true
+    }
+  ]
+})
+
 // Active section tracking for scrollspy
 const activeSection = ref('introduction')
 const showMobileNav = ref(false)
 const showCopiedToast = ref(false)
 const copiedText = ref('')
+
+// Live demos state
+const activeDemoTabs = ref({
+  privateChat: 'webcomponent',
+  groupChat: 'webcomponent',
+  supportWidget: 'webcomponent',
+  anonymousChat: 'webcomponent',
+  fileAttachments: 'webcomponent',
+})
 
 // Navigation structure
 const navigation = [
@@ -23,6 +43,7 @@ const navigation = [
       { id: 'introduction', label: 'Introduction' },
       { id: 'quickstart', label: 'Quick Start' },
       { id: 'architecture', label: 'Architecture' },
+      { id: 'live-demos', label: 'Live Demos' },
     ]
   },
   {
@@ -381,6 +402,215 @@ echo.private(\`workspace.\${workspace_id}\`)
   "body_text": "Hi {{recipient.name}}, {{sender.name}} sent: {{message.content}}. Reply at {{conversation_url}}",
   "variables": ["sender.name", "recipient.name", "message.content", "conversation_url"]
 }`,
+
+  // Live Demos Code Snippets
+  demo1on1WebComponent: `<!-- 1-on-1 Private Chat -->
+<reusable-chat-inline
+  api-key="sk_demo_reusable_chat_demo_key_2026"
+  user-id="user_alice_123"
+  user-name="Alice"
+  user-email="alice@example.com"
+  conversation-id="demo-1on1-conversation"
+  theme="light"
+  accent-color="#10b981"
+></reusable-chat-inline>`,
+
+  demo1on1API: `// Create users
+const alice = await fetch('/api/v1/users', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    external_id: 'user_alice',
+    name: 'Alice',
+    email: 'alice@example.com'
+  })
+}).then(r => r.json())
+
+const bob = await fetch('/api/v1/users', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    external_id: 'user_bob',
+    name: 'Bob',
+    email: 'bob@example.com'
+  })
+}).then(r => r.json())
+
+// Create 1-on-1 conversation
+const conversation = await fetch('/api/v1/conversations', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    type: 'direct',
+    participant_ids: [alice.data.id, bob.data.id],
+    name: 'Alice & Bob'
+  })
+}).then(r => r.json())
+
+// Send message
+await fetch(\`/api/widget/conversations/\${conversation.data.id}/messages\`, {
+  method: 'POST',
+  headers: { 'Authorization': \`Bearer \${sessionToken}\` },
+  body: JSON.stringify({
+    content: 'Hey Bob! How are you?'
+  })
+})`,
+
+  demoGroupWebComponent: `<!-- Group Chat -->
+<reusable-chat-inline
+  api-key="sk_demo_reusable_chat_demo_key_2026"
+  user-id="user_team_lead"
+  user-name="Sarah (Team Lead)"
+  conversation-id="demo-group-conversation"
+  theme="light"
+  accent-color="#8b5cf6"
+></reusable-chat-inline>`,
+
+  demoGroupAPI: `// Create group conversation
+const group = await fetch('/api/v1/conversations', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    type: 'group',
+    participant_ids: [
+      'user_sarah_id',
+      'user_john_id',
+      'user_emma_id',
+      'user_mike_id'
+    ],
+    name: 'Product Team',
+    metadata: {
+      department: 'Product',
+      project: 'Q1 Launch'
+    }
+  })
+}).then(r => r.json())
+
+// Add participant later
+await fetch(\`/api/v1/conversations/\${group.data.id}/participants\`, {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    user_id: 'user_alex_id'
+  })
+})`,
+
+  demoSupportWebComponent: `<!-- Customer Support Widget -->
+<reusable-chat-inline
+  api-key="sk_demo_reusable_chat_demo_key_2026"
+  user-id="customer_jane_456"
+  user-name="Jane (Customer)"
+  user-email="jane@customer.com"
+  conversation-id="demo-support-conversation"
+  theme="light"
+  accent-color="#f59e0b"
+></reusable-chat-inline>`,
+
+  demoSupportAPI: `// Create support conversation with metadata
+const supportChat = await fetch('/api/v1/conversations', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    type: 'direct',
+    participant_ids: [customer_id, support_agent_id],
+    name: 'Support: Billing Question',
+    metadata: {
+      type: 'support',
+      priority: 'high',
+      category: 'billing',
+      ticket_id: 'TICKET-789',
+      customer_plan: 'enterprise'
+    }
+  })
+}).then(r => r.json())
+
+// Auto-send welcome message
+await fetch(\`/api/widget/conversations/\${supportChat.data.id}/messages\`, {
+  method: 'POST',
+  headers: { 'Authorization': \`Bearer \${agentToken}\` },
+  body: JSON.stringify({
+    content: 'Hi! I\\'m here to help. What can I assist you with today?'
+  })
+})`,
+
+  demoAnonymousWebComponent: `<!-- Anonymous Chat -->
+<reusable-chat-inline
+  api-key="sk_demo_reusable_chat_demo_key_2026"
+  user-id="anonymous_visitor_789"
+  user-name="Anonymous Visitor"
+  conversation-id="demo-anonymous-conversation"
+  theme="dark"
+  accent-color="#ec4899"
+></reusable-chat-inline>`,
+
+  demoAnonymousAPI: `// Create anonymous user (no email required)
+const anonUser = await fetch('/api/v1/users', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    external_id: \`anon_\${Date.now()}\`,
+    name: 'Anonymous Visitor',
+    metadata: {
+      is_anonymous: true,
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent']
+    }
+  })
+}).then(r => r.json())
+
+// Create ephemeral conversation
+const anonChat = await fetch('/api/v1/conversations', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    type: 'direct',
+    participant_ids: [anonUser.data.id, moderator_id],
+    metadata: {
+      ephemeral: true,
+      expires_at: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+    }
+  })
+})`,
+
+  demoFilesWebComponent: `<!-- File Attachments Demo -->
+<reusable-chat-inline
+  api-key="sk_demo_reusable_chat_demo_key_2026"
+  user-id="user_designer_123"
+  user-name="Alex (Designer)"
+  conversation-id="demo-files-conversation"
+  theme="light"
+  accent-color="#06b6d4"
+></reusable-chat-inline>`,
+
+  demoFilesAPI: `// Upload file attachment
+const formData = new FormData()
+formData.append('file', fileInput.files[0])
+
+const attachment = await fetch(\`/api/widget/conversations/\${conversationId}/attachments\`, {
+  method: 'POST',
+  headers: { 'Authorization': \`Bearer \${sessionToken}\` },
+  body: formData
+}).then(r => r.json())
+
+// Send message with attachment
+await fetch(\`/api/widget/conversations/\${conversationId}/messages\`, {
+  method: 'POST',
+  headers: {
+    'Authorization': \`Bearer \${sessionToken}\`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    content: 'Check out this design mockup!',
+    attachment_ids: [attachment.data.id]
+  })
+})
+
+// Supported file types
+const supportedTypes = {
+  images: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  documents: ['application/pdf', 'text/plain'],
+  archives: ['application/zip']
+}`,
 }
 
 // Scroll to section
@@ -662,6 +892,663 @@ const scrollToSection = (id: string) => {
                 <li><strong>Widget</strong> — Drop-in solution using public keys. Best for adding chat to existing sites.</li>
                 <li><strong>API</strong> — Full control using API keys. Best for custom UIs and backend integrations.</li>
               </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Live Demos -->
+        <section id="live-demos" class="doc-section live-demos-section">
+          <div class="gradient-header">
+            <h2>🎮 Live Interactive Demos</h2>
+            <p>See it in action. Try working chat examples with real WebSocket connections.</p>
+          </div>
+
+          <div class="demos-grid">
+            <!-- Demo 1: 1-on-1 Private Chat -->
+            <div class="demo-card private-chat">
+              <div class="demo-header">
+                <div class="demo-icon">💬</div>
+                <div class="demo-title">
+                  <h3>1-on-1 Private Chat</h3>
+                  <p>Direct messaging between two users</p>
+                </div>
+              </div>
+
+              <div class="demo-tabs">
+                <button
+                  :class="{ active: activeDemoTabs.privateChat === 'preview' }"
+                  @click="activeDemoTabs.privateChat = 'preview'"
+                >
+                  Live Preview
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.privateChat === 'webcomponent' }"
+                  @click="activeDemoTabs.privateChat = 'webcomponent'"
+                >
+                  Web Component
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.privateChat === 'api' }"
+                  @click="activeDemoTabs.privateChat = 'api'"
+                >
+                  API Usage
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.privateChat === 'features' }"
+                  @click="activeDemoTabs.privateChat = 'features'"
+                >
+                  Features
+                </button>
+              </div>
+
+              <div class="demo-content">
+                <div v-show="activeDemoTabs.privateChat === 'preview'" class="demo-preview">
+                  <reusable-chat-inline
+                    api-key="sk_demo_reusable_chat_demo_key_2026"
+                    user-id="user_alice_123"
+                    user-name="Alice"
+                    user-email="alice@example.com"
+                    conversation-id="demo-1on1-conversation"
+                    theme="light"
+                    accent-color="#10b981"
+                  ></reusable-chat-inline>
+                </div>
+
+                <div v-show="activeDemoTabs.privateChat === 'webcomponent'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">HTML</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demo1on1WebComponent, '1-on-1 chat code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demo1on1WebComponent }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.privateChat === 'api'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">JavaScript</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demo1on1API, '1-on-1 API code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demo1on1API }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.privateChat === 'features'" class="demo-features">
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Real-time message delivery</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Read receipts & typing indicators</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Persistent conversation history</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>User presence & online status</span>
+                    </div>
+                  </div>
+                  <div class="use-cases">
+                    <h4>Use Cases</h4>
+                    <div class="use-case-tags">
+                      <span>Customer Support</span>
+                      <span>Sales</span>
+                      <span>Messaging Apps</span>
+                      <span>Social Networks</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Demo 2: Group Chat -->
+            <div class="demo-card group-chat">
+              <div class="demo-header">
+                <div class="demo-icon">👥</div>
+                <div class="demo-title">
+                  <h3>Group Chat</h3>
+                  <p>Team collaboration with multiple participants</p>
+                </div>
+              </div>
+
+              <div class="demo-tabs">
+                <button
+                  :class="{ active: activeDemoTabs.groupChat === 'preview' }"
+                  @click="activeDemoTabs.groupChat = 'preview'"
+                >
+                  Live Preview
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.groupChat === 'webcomponent' }"
+                  @click="activeDemoTabs.groupChat = 'webcomponent'"
+                >
+                  Web Component
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.groupChat === 'api' }"
+                  @click="activeDemoTabs.groupChat = 'api'"
+                >
+                  API Usage
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.groupChat === 'features' }"
+                  @click="activeDemoTabs.groupChat = 'features'"
+                >
+                  Features
+                </button>
+              </div>
+
+              <div class="demo-content">
+                <div v-show="activeDemoTabs.groupChat === 'preview'" class="demo-preview">
+                  <reusable-chat-inline
+                    api-key="sk_demo_reusable_chat_demo_key_2026"
+                    user-id="user_team_lead"
+                    user-name="Sarah (Team Lead)"
+                    conversation-id="demo-group-conversation"
+                    theme="light"
+                    accent-color="#8b5cf6"
+                  ></reusable-chat-inline>
+                </div>
+
+                <div v-show="activeDemoTabs.groupChat === 'webcomponent'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">HTML</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoGroupWebComponent, 'Group chat code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoGroupWebComponent }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.groupChat === 'api'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">JavaScript</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoGroupAPI, 'Group API code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoGroupAPI }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.groupChat === 'features'" class="demo-features">
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Add/remove participants dynamically</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Multiple typing indicators</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Participant avatars & presence</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Custom metadata per conversation</span>
+                    </div>
+                  </div>
+                  <div class="use-cases">
+                    <h4>Use Cases</h4>
+                    <div class="use-case-tags">
+                      <span>Team Collaboration</span>
+                      <span>Project Management</span>
+                      <span>Community Forums</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Demo 3: Customer Support -->
+            <div class="demo-card support-widget">
+              <div class="demo-header">
+                <div class="demo-icon">🎧</div>
+                <div class="demo-title">
+                  <h3>Customer Support</h3>
+                  <p>Help desk with rich metadata & ticketing</p>
+                </div>
+              </div>
+
+              <div class="demo-tabs">
+                <button
+                  :class="{ active: activeDemoTabs.supportWidget === 'preview' }"
+                  @click="activeDemoTabs.supportWidget = 'preview'"
+                >
+                  Live Preview
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.supportWidget === 'webcomponent' }"
+                  @click="activeDemoTabs.supportWidget = 'webcomponent'"
+                >
+                  Web Component
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.supportWidget === 'api' }"
+                  @click="activeDemoTabs.supportWidget = 'api'"
+                >
+                  API Usage
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.supportWidget === 'features' }"
+                  @click="activeDemoTabs.supportWidget = 'features'"
+                >
+                  Features
+                </button>
+              </div>
+
+              <div class="demo-content">
+                <div v-show="activeDemoTabs.supportWidget === 'preview'" class="demo-preview">
+                  <reusable-chat-inline
+                    api-key="sk_demo_reusable_chat_demo_key_2026"
+                    user-id="customer_jane_456"
+                    user-name="Jane (Customer)"
+                    user-email="jane@customer.com"
+                    conversation-id="demo-support-conversation"
+                    theme="light"
+                    accent-color="#f59e0b"
+                  ></reusable-chat-inline>
+                </div>
+
+                <div v-show="activeDemoTabs.supportWidget === 'webcomponent'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">HTML</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoSupportWebComponent, 'Support chat code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoSupportWebComponent }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.supportWidget === 'api'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">JavaScript</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoSupportAPI, 'Support API code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoSupportAPI }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.supportWidget === 'features'" class="demo-features">
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Rich metadata (ticket ID, priority, category)</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Auto-send welcome messages</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Track customer plan & context</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Integrate with CRM/ticketing systems</span>
+                    </div>
+                  </div>
+                  <div class="use-cases">
+                    <h4>Use Cases</h4>
+                    <div class="use-case-tags">
+                      <span>Help Desk</span>
+                      <span>Live Chat Support</span>
+                      <span>SaaS Products</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Demo 4: Anonymous Chat -->
+            <div class="demo-card anonymous-chat">
+              <div class="demo-header">
+                <div class="demo-icon">🎭</div>
+                <div class="demo-title">
+                  <h3>Anonymous Chat</h3>
+                  <p>Guest conversations without signup</p>
+                </div>
+              </div>
+
+              <div class="demo-tabs">
+                <button
+                  :class="{ active: activeDemoTabs.anonymousChat === 'preview' }"
+                  @click="activeDemoTabs.anonymousChat = 'preview'"
+                >
+                  Live Preview
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.anonymousChat === 'webcomponent' }"
+                  @click="activeDemoTabs.anonymousChat = 'webcomponent'"
+                >
+                  Web Component
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.anonymousChat === 'api' }"
+                  @click="activeDemoTabs.anonymousChat = 'api'"
+                >
+                  API Usage
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.anonymousChat === 'features' }"
+                  @click="activeDemoTabs.anonymousChat = 'features'"
+                >
+                  Features
+                </button>
+              </div>
+
+              <div class="demo-content">
+                <div v-show="activeDemoTabs.anonymousChat === 'preview'" class="demo-preview dark-preview">
+                  <reusable-chat-inline
+                    api-key="sk_demo_reusable_chat_demo_key_2026"
+                    user-id="anonymous_visitor_789"
+                    user-name="Anonymous Visitor"
+                    conversation-id="demo-anonymous-conversation"
+                    theme="dark"
+                    accent-color="#ec4899"
+                  ></reusable-chat-inline>
+                </div>
+
+                <div v-show="activeDemoTabs.anonymousChat === 'webcomponent'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">HTML</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoAnonymousWebComponent, 'Anonymous chat code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoAnonymousWebComponent }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.anonymousChat === 'api'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">JavaScript</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoAnonymousAPI, 'Anonymous API code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoAnonymousAPI }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.anonymousChat === 'features'" class="demo-features">
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>No email or signup required</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Ephemeral conversations (auto-expire)</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Track IP & user agent for moderation</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Convert to authenticated later</span>
+                    </div>
+                  </div>
+                  <div class="use-cases">
+                    <h4>Use Cases</h4>
+                    <div class="use-case-tags">
+                      <span>Pre-sale Questions</span>
+                      <span>Public Forums</span>
+                      <span>Event Q&A</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Demo 5: File Attachments -->
+            <div class="demo-card file-attachments">
+              <div class="demo-header">
+                <div class="demo-icon">📎</div>
+                <div class="demo-title">
+                  <h3>File Attachments</h3>
+                  <p>Share images, documents, and files</p>
+                </div>
+              </div>
+
+              <div class="demo-tabs">
+                <button
+                  :class="{ active: activeDemoTabs.fileAttachments === 'preview' }"
+                  @click="activeDemoTabs.fileAttachments = 'preview'"
+                >
+                  Live Preview
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.fileAttachments === 'webcomponent' }"
+                  @click="activeDemoTabs.fileAttachments = 'webcomponent'"
+                >
+                  Web Component
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.fileAttachments === 'api' }"
+                  @click="activeDemoTabs.fileAttachments = 'api'"
+                >
+                  API Usage
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.fileAttachments === 'features' }"
+                  @click="activeDemoTabs.fileAttachments = 'features'"
+                >
+                  Features
+                </button>
+              </div>
+
+              <div class="demo-content">
+                <div v-show="activeDemoTabs.fileAttachments === 'preview'" class="demo-preview">
+                  <reusable-chat-inline
+                    api-key="sk_demo_reusable_chat_demo_key_2026"
+                    user-id="user_designer_123"
+                    user-name="Alex (Designer)"
+                    conversation-id="demo-files-conversation"
+                    theme="light"
+                    accent-color="#06b6d4"
+                  ></reusable-chat-inline>
+                </div>
+
+                <div v-show="activeDemoTabs.fileAttachments === 'webcomponent'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">HTML</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoFilesWebComponent, 'File attachments code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoFilesWebComponent }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.fileAttachments === 'api'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">JavaScript</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoFilesAPI, 'File attachments API code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoFilesAPI }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.fileAttachments === 'features'" class="demo-features">
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Images, PDFs, ZIP files supported</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Image previews & lightbox</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>CDN-hosted with automatic optimization</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Upload progress indicators</span>
+                    </div>
+                  </div>
+                  <div class="use-cases">
+                    <h4>Use Cases</h4>
+                    <div class="use-case-tags">
+                      <span>Design Collaboration</span>
+                      <span>File Sharing</span>
+                      <span>Support Tickets</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-box demo-info">
+            <div class="info-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </div>
+            <div class="info-content">
+              <strong>Try it yourself!</strong>
+              <p>All demos use the demo API key and connect to live WebSocket servers. Open multiple browser tabs to see real-time messaging in action.</p>
             </div>
           </div>
         </section>
@@ -3160,5 +4047,383 @@ code {
   .variables-grid {
     grid-template-columns: 1fr;
   }
+
+  .demos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-card {
+    max-width: 100%;
+  }
+
+  .demo-tabs {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .demo-tabs button {
+    flex: 1 1 auto;
+    min-width: 100px;
+    font-size: 12px;
+  }
+}
+
+/* ===== Live Demos Section ===== */
+.live-demos-section {
+  padding: 80px 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.live-demos-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15), transparent 70%);
+  pointer-events: none;
+}
+
+.live-demos-section .gradient-header {
+  text-align: center;
+  margin-bottom: 64px;
+  position: relative;
+}
+
+.live-demos-section .gradient-header h2 {
+  font-size: 48px;
+  margin: 0 0 16px 0;
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.live-demos-section .gradient-header p {
+  font-size: 20px;
+  color: #94a3b8;
+  margin: 0;
+  font-weight: 500;
+}
+
+.demos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.demo-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.demo-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* Demo card color accents */
+.demo-card.private-chat {
+  border-top: 3px solid #10b981;
+}
+
+.demo-card.private-chat:hover {
+  border-color: #10b981;
+  box-shadow: 0 20px 60px rgba(16, 185, 129, 0.2);
+}
+
+.demo-card.group-chat {
+  border-top: 3px solid #8b5cf6;
+}
+
+.demo-card.group-chat:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 20px 60px rgba(139, 92, 246, 0.2);
+}
+
+.demo-card.support-widget {
+  border-top: 3px solid #f59e0b;
+}
+
+.demo-card.support-widget:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 20px 60px rgba(245, 158, 11, 0.2);
+}
+
+.demo-card.anonymous-chat {
+  border-top: 3px solid #ec4899;
+}
+
+.demo-card.anonymous-chat:hover {
+  border-color: #ec4899;
+  box-shadow: 0 20px 60px rgba(236, 72, 153, 0.2);
+}
+
+.demo-card.file-attachments {
+  border-top: 3px solid #06b6d4;
+}
+
+.demo-card.file-attachments:hover {
+  border-color: #06b6d4;
+  box-shadow: 0 20px 60px rgba(6, 182, 212, 0.2);
+}
+
+.demo-header {
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: rgba(15, 23, 42, 0.5);
+  border-bottom: 1px solid #334155;
+}
+
+.demo-icon {
+  font-size: 40px;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+.demo-title h3 {
+  margin: 0 0 4px 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+}
+
+.demo-title p {
+  margin: 0;
+  font-size: 14px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.demo-tabs {
+  display: flex;
+  gap: 0;
+  background: #0f172a;
+  border-bottom: 1px solid #334155;
+  padding: 0 24px;
+}
+
+.demo-tabs button {
+  flex: 1;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+.demo-tabs button:hover {
+  color: #cbd5e1;
+  background: rgba(51, 65, 85, 0.3);
+}
+
+.demo-tabs button.active {
+  color: #f1f5f9;
+  border-bottom-color: currentColor;
+  background: rgba(51, 65, 85, 0.5);
+}
+
+/* Color-coded active tabs */
+.private-chat .demo-tabs button.active {
+  color: #10b981;
+}
+
+.group-chat .demo-tabs button.active {
+  color: #8b5cf6;
+}
+
+.support-widget .demo-tabs button.active {
+  color: #f59e0b;
+}
+
+.anonymous-chat .demo-tabs button.active {
+  color: #ec4899;
+}
+
+.file-attachments .demo-tabs button.active {
+  color: #06b6d4;
+}
+
+.demo-content {
+  min-height: 500px;
+}
+
+.demo-preview {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-preview.dark-preview {
+  background: #0f172a;
+}
+
+.demo-preview reusable-chat-inline {
+  width: 100%;
+  max-width: 600px;
+  height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.demo-code {
+  padding: 0;
+  background: #0f172a;
+  min-height: 500px;
+}
+
+.demo-code .code-block {
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  height: 100%;
+}
+
+.demo-code .code-block pre {
+  max-height: 500px;
+  overflow-y: auto;
+  margin: 0;
+  background: #0f172a;
+  padding: 24px;
+}
+
+.demo-code .code-block code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #e2e8f0;
+}
+
+.demo-features {
+  padding: 32px 24px;
+  background: #1e293b;
+  min-height: 500px;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.feature-item:hover {
+  border-color: #475569;
+  background: rgba(15, 23, 42, 0.8);
+  transform: translateX(4px);
+}
+
+.feature-item svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.feature-item span {
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.use-cases {
+  padding-top: 24px;
+  border-top: 1px solid #334155;
+}
+
+.use-cases h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.use-case-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.use-case-tags span {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a78bfa;
+  transition: all 0.2s;
+}
+
+.use-case-tags span:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+  border-color: rgba(139, 92, 246, 0.6);
+  transform: translateY(-2px);
+}
+
+.demo-info {
+  margin-top: 48px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid #334155;
+}
+
+.demo-info .info-content strong {
+  color: #f1f5f9;
+}
+
+.demo-info .info-content p {
+  color: #cbd5e1;
+}
+
+/* Terminal-like code highlighting */
+.demo-code .code-block code .token.keyword {
+  color: #c792ea;
+}
+
+.demo-code .code-block code .token.string {
+  color: #c3e88d;
+}
+
+.demo-code .code-block code .token.function {
+  color: #82aaff;
+}
+
+.demo-code .code-block code .token.comment {
+  color: #546e7a;
+  font-style: italic;
 }
 </style>
