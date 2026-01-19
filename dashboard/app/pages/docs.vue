@@ -409,7 +409,7 @@ echo.private(\`workspace.\${workspace_id}\`)
   user-id="user_alice_123"
   user-name="Alice"
   user-email="alice@example.com"
-  conversation-id="demo-1on1-conversation"
+  conversation-id="019c0001-0000-7000-a000-000000000001"
   theme="light"
   accent-color="#10b981"
 ></reusable-chat-inline>`,
@@ -460,7 +460,7 @@ await fetch(\`/api/widget/conversations/\${conversation.data.id}/messages\`, {
   api-key="sk_demo_reusable_chat_demo_key_2026"
   user-id="user_team_lead"
   user-name="Sarah (Team Lead)"
-  conversation-id="demo-group-conversation"
+  conversation-id="019c0002-0000-7000-a000-000000000002"
   theme="light"
   accent-color="#8b5cf6"
 ></reusable-chat-inline>`,
@@ -500,7 +500,7 @@ await fetch(\`/api/v1/conversations/\${group.data.id}/participants\`, {
   user-id="customer_jane_456"
   user-name="Jane (Customer)"
   user-email="jane@customer.com"
-  conversation-id="demo-support-conversation"
+  conversation-id="019c0003-0000-7000-a000-000000000003"
   theme="light"
   accent-color="#f59e0b"
 ></reusable-chat-inline>`,
@@ -537,7 +537,7 @@ await fetch(\`/api/widget/conversations/\${supportChat.data.id}/messages\`, {
   api-key="sk_demo_reusable_chat_demo_key_2026"
   user-id="anonymous_visitor_789"
   user-name="Anonymous Visitor"
-  conversation-id="demo-anonymous-conversation"
+  conversation-id="019c0004-0000-7000-a000-000000000004"
   theme="dark"
   accent-color="#ec4899"
 ></reusable-chat-inline>`,
@@ -576,7 +576,7 @@ const anonChat = await fetch('/api/v1/conversations', {
   api-key="sk_demo_reusable_chat_demo_key_2026"
   user-id="user_designer_123"
   user-name="Alex (Designer)"
-  conversation-id="demo-files-conversation"
+  conversation-id="019c0005-0000-7000-a000-000000000005"
   theme="light"
   accent-color="#06b6d4"
 ></reusable-chat-inline>`,
@@ -947,7 +947,7 @@ const scrollToSection = (id: string) => {
                     user-id="user_alice_123"
                     user-name="Alice"
                     user-email="alice@example.com"
-                    conversation-id="demo-1on1-conversation"
+                    conversation-id="019c0001-0000-7000-a000-000000000001"
                     theme="light"
                     accent-color="#10b981"
                   ></reusable-chat-inline>
@@ -1074,7 +1074,7 @@ const scrollToSection = (id: string) => {
                     api-key="sk_demo_reusable_chat_demo_key_2026"
                     user-id="user_team_lead"
                     user-name="Sarah (Team Lead)"
-                    conversation-id="demo-group-conversation"
+                    conversation-id="019c0002-0000-7000-a000-000000000002"
                     theme="light"
                     accent-color="#8b5cf6"
                   ></reusable-chat-inline>
@@ -1201,7 +1201,7 @@ const scrollToSection = (id: string) => {
                     user-id="customer_jane_456"
                     user-name="Jane (Customer)"
                     user-email="jane@customer.com"
-                    conversation-id="demo-support-conversation"
+                    conversation-id="019c0003-0000-7000-a000-000000000003"
                     theme="light"
                     accent-color="#f59e0b"
                   ></reusable-chat-inline>
@@ -1327,7 +1327,7 @@ const scrollToSection = (id: string) => {
                     api-key="sk_demo_reusable_chat_demo_key_2026"
                     user-id="anonymous_visitor_789"
                     user-name="Anonymous Visitor"
-                    conversation-id="demo-anonymous-conversation"
+                    conversation-id="019c0004-0000-7000-a000-000000000004"
                     theme="dark"
                     accent-color="#ec4899"
                   ></reusable-chat-inline>
@@ -1453,7 +1453,7 @@ const scrollToSection = (id: string) => {
                     api-key="sk_demo_reusable_chat_demo_key_2026"
                     user-id="user_designer_123"
                     user-name="Alex (Designer)"
-                    conversation-id="demo-files-conversation"
+                    conversation-id="019c0005-0000-7000-a000-000000000005"
                     theme="light"
                     accent-color="#06b6d4"
                   ></reusable-chat-inline>
