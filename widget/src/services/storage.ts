@@ -41,16 +41,20 @@ export const storage = {
     }
   },
 
-  // Session management
-  getSessionToken(): string | null {
-    const session = this.get<StoredSession>('session')
+  // Session management (per-user sessions)
+  getSessionKey(userId?: string): string {
+    return userId ? `session_${userId}` : 'session'
+  },
+
+  getSessionToken(userId?: string): string | null {
+    const session = this.get<StoredSession>(this.getSessionKey(userId))
     if (!session) return null
 
     // Check if session is expired
     if (session.expiresAt) {
       const expiresAt = new Date(session.expiresAt)
       if (expiresAt <= new Date()) {
-        this.clearSession()
+        this.clearSession(userId)
         return null
       }
     }
@@ -59,18 +63,18 @@ export const storage = {
   },
 
   setSession(session: StoredSession): void {
-    this.set('session', session)
+    this.set(this.getSessionKey(session.userId), session)
   },
 
-  getSession(): StoredSession | null {
-    const session = this.get<StoredSession>('session')
+  getSession(userId?: string): StoredSession | null {
+    const session = this.get<StoredSession>(this.getSessionKey(userId))
     if (!session) return null
 
     // Check if session is expired
     if (session.expiresAt) {
       const expiresAt = new Date(session.expiresAt)
       if (expiresAt <= new Date()) {
-        this.clearSession()
+        this.clearSession(userId)
         return null
       }
     }
@@ -79,18 +83,18 @@ export const storage = {
   },
 
   // Legacy support
-  setSessionToken(token: string): void {
-    const existing = this.getSession()
+  setSessionToken(token: string, userId?: string): void {
+    const existing = this.getSession(userId)
     if (existing) {
       existing.token = token
       this.setSession(existing)
     } else {
-      this.setSession({ token, userId: '', userName: '' })
+      this.setSession({ token, userId: userId || '', userName: '' })
     }
   },
 
-  clearSession(): void {
-    this.remove('session')
+  clearSession(userId?: string): void {
+    this.remove(this.getSessionKey(userId))
     this.remove('user')
   },
 

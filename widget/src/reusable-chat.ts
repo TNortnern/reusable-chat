@@ -123,8 +123,8 @@ export class ReusableChat extends LitElement {
     this.api = new ApiService(this.apiUrl, this.apiKey)
 
     try {
-      // Try to restore session
-      const savedToken = storage.getSessionToken()
+      // Try to restore session (per-user)
+      const savedToken = storage.getSessionToken(this.userId)
       if (savedToken && this.userId) {
         this.api.setSessionToken(savedToken)
         try {
@@ -133,7 +133,7 @@ export class ReusableChat extends LitElement {
           this.session = { token: savedToken, user: { id: this.userId, name: this.userName }, expires_at: '' }
           this.setupWebSocket(savedToken)
         } catch {
-          storage.clearSession()
+          storage.clearSession(this.userId)
           await this.createSession()
         }
       } else if (this.userId && this.userName) {
@@ -163,7 +163,7 @@ export class ReusableChat extends LitElement {
       )
       this.session = session
       this.api.setSessionToken(session.token)
-      storage.setSessionToken(session.token)
+      storage.setSessionToken(session.token, this.userId)
 
       const { data } = await this.api.getConversations()
       this.conversations = data
@@ -350,8 +350,8 @@ export class ReusableChat extends LitElement {
     if (userEmail !== undefined) this.userEmail = userEmail
     if (userAvatar !== undefined) this.userAvatar = userAvatar
 
-    // Clear existing session
-    storage.clearSession()
+    // Clear existing session for old user
+    storage.clearSession(this.userId)
     this.session = null
     this.conversations = []
     this.messages = []
@@ -371,7 +371,7 @@ export class ReusableChat extends LitElement {
    */
   public destroy(): void {
     this.cleanupResources()
-    storage.clearSession()
+    storage.clearSession(this.userId)
     this.session = null
     this.conversations = []
     this.messages = []
