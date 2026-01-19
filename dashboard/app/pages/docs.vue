@@ -9,12 +9,11 @@ definePageMeta({
   layout: false
 })
 
-// Load the reusable-chat-inline widget
+// Load the reusable-chat widget (includes both reusable-chat and reusable-chat-inline)
 useHead({
   script: [
     {
-      src: '/widget/dist/reusable-chat-inline.js',
-      type: 'module',
+      src: '/widget.iife.js',
       defer: true
     }
   ]
