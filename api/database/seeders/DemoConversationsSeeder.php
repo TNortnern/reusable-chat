@@ -95,6 +95,20 @@ class DemoConversationsSeeder extends Seeder
                     ['sender' => 0, 'content' => 'Check out the new mockups I just uploaded!'],
                 ]
             ],
+            [
+                'id' => '019c0006-0000-7000-a000-000000000006',
+                'name' => 'Invite Your Friends!',
+                'type' => 'direct',
+                'users' => [
+                    ['external_id' => 'user_chris_789', 'name' => 'Chris', 'email' => 'chris@example.com'],
+                    ['external_id' => 'user_morgan_456', 'name' => 'Morgan', 'email' => 'morgan@example.com'],
+                ],
+                'messages' => [
+                    ['sender' => 0, 'content' => 'Hey! Just invited you to try out this chat platform 👋'],
+                    ['sender' => 1, 'content' => 'Thanks for the invite! This looks really cool!'],
+                    ['sender' => 0, 'content' => 'Right? Super easy to integrate into any app'],
+                ]
+            ],
         ];
 
         foreach ($conversations as $convData) {

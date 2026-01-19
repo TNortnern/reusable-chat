@@ -32,6 +32,7 @@ const activeDemoTabs = ref({
   supportWidget: 'webcomponent',
   anonymousChat: 'webcomponent',
   fileAttachments: 'webcomponent',
+  inviteFriend: 'webcomponent',
 })
 
 // Navigation structure
@@ -610,6 +611,43 @@ const supportedTypes = {
   documents: ['application/pdf', 'text/plain'],
   archives: ['application/zip']
 }`,
+
+  demoInviteWebComponent: `<!-- Invite a Friend Demo -->
+<reusable-chat-inline
+  api-key="sk_demo_reusable_chat_demo_key_2026"
+  user-id="user_chris_789"
+  user-name="Chris"
+  conversation-id="019c0006-0000-7000-a000-000000000006"
+  theme="light"
+  accent-color="#8b5cf6"
+></reusable-chat-inline>`,
+
+  demoInviteAPI: `// Create invitation link
+const invite = await fetch('/api/v1/invites', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    invited_by: currentUserId,
+    expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
+    metadata: {
+      message: 'Join me on this awesome chat platform!',
+      conversation_id: conversationId // Optional: pre-join conversation
+    }
+  })
+})
+
+// Share invite link
+const inviteUrl = \`https://yourapp.com/invite/\${invite.data.token}\`
+
+// Track invite acceptance
+await fetch(\`/api/v1/invites/\${inviteToken}/accept\`, {
+  method: 'POST',
+  headers: { 'X-API-Key': 'sk_your_api_key' },
+  body: JSON.stringify({
+    user_id: newUserId,
+    user_name: 'New User'
+  })
+})`,
 }
 
 // Scroll to section
@@ -1530,6 +1568,133 @@ const scrollToSection = (id: string) => {
                       <span>Design Collaboration</span>
                       <span>File Sharing</span>
                       <span>Support Tickets</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Demo 6: Invite a Friend -->
+            <div class="demo-card invite-friend">
+              <div class="demo-header">
+                <div class="demo-icon">🤝</div>
+                <div class="demo-title">
+                  <h3>Invite a Friend</h3>
+                  <p>Viral growth through social invites</p>
+                </div>
+              </div>
+
+              <div class="demo-tabs">
+                <button
+                  :class="{ active: activeDemoTabs.inviteFriend === 'preview' }"
+                  @click="activeDemoTabs.inviteFriend = 'preview'"
+                >
+                  Live Preview
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.inviteFriend === 'webcomponent' }"
+                  @click="activeDemoTabs.inviteFriend = 'webcomponent'"
+                >
+                  Web Component
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.inviteFriend === 'api' }"
+                  @click="activeDemoTabs.inviteFriend = 'api'"
+                >
+                  API Usage
+                </button>
+                <button
+                  :class="{ active: activeDemoTabs.inviteFriend === 'features' }"
+                  @click="activeDemoTabs.inviteFriend = 'features'"
+                >
+                  Features
+                </button>
+              </div>
+
+              <div class="demo-content">
+                <div v-show="activeDemoTabs.inviteFriend === 'preview'" class="demo-preview">
+                  <reusable-chat-inline
+                    api-key="sk_demo_reusable_chat_demo_key_2026"
+                    user-id="user_chris_789"
+                    user-name="Chris"
+                    conversation-id="019c0006-0000-7000-a000-000000000006"
+                    theme="light"
+                    accent-color="#8b5cf6"
+                  ></reusable-chat-inline>
+                </div>
+
+                <div v-show="activeDemoTabs.inviteFriend === 'webcomponent'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">HTML</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoInviteWebComponent, 'Invite friend code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoInviteWebComponent }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.inviteFriend === 'api'" class="demo-code">
+                  <div class="code-block">
+                    <div class="code-header">
+                      <span class="code-lang">JavaScript</span>
+                      <button
+                        class="copy-btn"
+                        @click="copyToClipboard(codeSnippets.demoInviteAPI, 'Invite friend API code')"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code>{{ codeSnippets.demoInviteAPI }}</code></pre>
+                  </div>
+                </div>
+
+                <div v-show="activeDemoTabs.inviteFriend === 'features'" class="demo-features">
+                  <div class="feature-list">
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Shareable invite links with expiration</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Track referral chains & attribution</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Pre-join conversations on acceptance</span>
+                    </div>
+                    <div class="feature-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Customizable invitation messages</span>
+                    </div>
+                  </div>
+                  <div class="use-cases">
+                    <h4>Use Cases</h4>
+                    <div class="use-case-tags">
+                      <span>Social Networks</span>
+                      <span>Viral Growth</span>
+                      <span>Referral Programs</span>
+                      <span>Community Building</span>
                     </div>
                   </div>
                 </div>
