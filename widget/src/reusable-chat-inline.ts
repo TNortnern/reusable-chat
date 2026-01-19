@@ -35,6 +35,10 @@ interface TypingUser {
 export class ReusableChatInline extends LitElement {
   static styles = css`${unsafeCSS(baseStyles)}`
 
+  // Static counter for staggered initialization
+  private static initCounter = 0
+  private initDelay = 0
+
   // ============================================
   // HTML Attributes (Reactive Properties with reflection)
   // ============================================
@@ -82,6 +86,16 @@ export class ReusableChatInline extends LitElement {
   // ============================================
   async connectedCallback() {
     super.connectedCallback()
+
+    // Assign staggered delay to prevent race conditions
+    this.initDelay = ReusableChatInline.initCounter * 300 // 300ms between widgets
+    ReusableChatInline.initCounter++
+
+    // Wait for staggered delay
+    if (this.initDelay > 0) {
+      await new Promise(resolve => setTimeout(resolve, this.initDelay))
+    }
+
     await this.initialize()
   }
 
