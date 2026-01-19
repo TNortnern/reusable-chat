@@ -25,6 +25,18 @@ const showMobileNav = ref(false)
 const showCopiedToast = ref(false)
 const copiedText = ref('')
 
+// Invite link for demo #6
+const inviteLink = computed(() => {
+  const baseUrl = 'https://dashboard-production-8985.up.railway.app/docs#live-demos'
+  const params = new URLSearchParams({
+    demo: 'invite',
+    userId: 'user_morgan_456',
+    userName: 'Morgan',
+    conversationId: '019c0006-0000-7000-a000-000000000006'
+  })
+  return `${baseUrl}?${params.toString()}`
+})
+
 // Live demos state
 const activeDemoTabs = ref({
   privateChat: 'webcomponent',
@@ -124,6 +136,11 @@ const copyToClipboard = async (text: string, label = 'Code') => {
   } catch (err) {
     console.error('Failed to copy:', err)
   }
+}
+
+// Copy invite link
+const copyInviteLink = async () => {
+  await copyToClipboard(inviteLink.value, 'Invite link')
 }
 
 // Copy with LLM context
@@ -1612,7 +1629,37 @@ const scrollToSection = (id: string) => {
               </div>
 
               <div class="demo-content">
-                <div v-show="activeDemoTabs.inviteFriend === 'preview'" class="demo-preview">
+                <div v-show="activeDemoTabs.inviteFriend === 'preview'" class="demo-preview invite-demo-preview">
+                  <div class="invite-controls">
+                    <div class="invite-header">
+                      <h4>Try the Invite Feature</h4>
+                      <p>Generate a shareable link and open it in a new tab to join the conversation</p>
+                    </div>
+                    <div class="invite-link-container">
+                      <input
+                        type="text"
+                        readonly
+                        :value="inviteLink"
+                        class="invite-link-input"
+                        @click="$event.target.select()"
+                      />
+                      <button class="invite-copy-btn" @click="copyInviteLink">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy Link
+                      </button>
+                      <a :href="inviteLink" target="_blank" class="invite-open-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                          <polyline points="15 3 21 3 21 9"></polyline>
+                          <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                        Open in New Tab
+                      </a>
+                    </div>
+                  </div>
                   <reusable-chat-inline
                     api-key="sk_demo_reusable_chat_demo_key_2026"
                     user-id="user_chris_789"
@@ -4344,6 +4391,15 @@ code {
   box-shadow: 0 20px 60px rgba(6, 182, 212, 0.2);
 }
 
+.demo-card.invite-friend {
+  border-top: 3px solid #8b5cf6;
+}
+
+.demo-card.invite-friend:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 20px 60px rgba(139, 92, 246, 0.2);
+}
+
 .demo-header {
   padding: 24px;
   display: flex;
@@ -4453,6 +4509,97 @@ code {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Invite Demo Specific Styles */
+.invite-demo-preview {
+  flex-direction: column;
+  gap: 24px;
+}
+
+.invite-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border-radius: 12px;
+  border: 2px solid #8b5cf6;
+}
+
+.invite-header h4 {
+  margin: 0 0 8px 0;
+  color: #6d28d9;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.invite-header p {
+  margin: 0;
+  color: #7c3aed;
+  font-size: 14px;
+}
+
+.invite-link-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.invite-link-input {
+  flex: 1;
+  min-width: 300px;
+  padding: 10px 14px;
+  border: 2px solid #a78bfa;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  background: white;
+  color: #1e1b4b;
+}
+
+.invite-link-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.invite-copy-btn,
+.invite-open-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.invite-copy-btn {
+  background: #8b5cf6;
+  color: white;
+  border: none;
+}
+
+.invite-copy-btn:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.invite-open-btn {
+  background: white;
+  color: #8b5cf6;
+  border: 2px solid #8b5cf6;
+}
+
+.invite-open-btn:hover {
+  background: #f5f3ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
 .demo-code {

@@ -785,8 +785,8 @@ export class ReusableChat extends LitElement {
             ${this.messages.map(msg => this.renderMessage(msg))}
           </div>
         `}
-        ${this.renderTypingIndicator()}
       </div>
+      ${this.renderTypingIndicator()}
       ${this.renderInputArea()}
     `
   }
@@ -1153,7 +1153,6 @@ export class ReusableChat extends LitElement {
           flex: 1;
           overflow-y: auto;
           padding: 16px;
-          position: relative;
         }
 
         .messages-content {
@@ -1525,24 +1524,15 @@ export class ReusableChat extends LitElement {
 
         /* Typing indicator */
         .typing-indicator {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 8px 12px;
           color: var(--rc-text-secondary);
           font-size: 13px;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(8px);
+          background: var(--rc-bg);
           border-top: 1px solid var(--rc-border);
-          z-index: 10;
-        }
-
-        :host([theme="dark"]) .typing-indicator {
-          background: rgba(26, 32, 44, 0.95);
+          flex-shrink: 0;
         }
 
         .typing-dots {

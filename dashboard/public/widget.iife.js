@@ -110,8 +110,8 @@ function ve(e,t){return(t,s,i)=>((e,t,s)=>(s.configurable=!0,s.enumerable=!0,Ref
             ${this.messages.map(e=>this.renderMessage(e))}
           </div>
         `}
-        ${this.renderTypingIndicator()}
       </div>
+      ${this.renderTypingIndicator()}
       ${this.renderInputArea()}
     `}renderMessage(e){var t,s,i;const n=this.isOwnMessage(e),a=e.attachments&&e.attachments.length>0;return F`
       <div class="message ${n?"own":"other"} ${e.isOptimistic?"optimistic":""} ${e.failed?"failed":""}">
@@ -423,7 +423,6 @@ function ve(e,t){return(t,s,i)=>((e,t,s)=>(s.configurable=!0,s.enumerable=!0,Ref
           flex: 1;
           overflow-y: auto;
           padding: 16px;
-          position: relative;
         }
 
         .messages-content {
@@ -795,24 +794,15 @@ function ve(e,t){return(t,s,i)=>((e,t,s)=>(s.configurable=!0,s.enumerable=!0,Ref
 
         /* Typing indicator */
         .typing-indicator {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 8px 12px;
           color: var(--rc-text-secondary);
           font-size: 13px;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(8px);
+          background: var(--rc-bg);
           border-top: 1px solid var(--rc-border);
-          z-index: 10;
-        }
-
-        :host([theme="dark"]) .typing-indicator {
-          background: rgba(26, 32, 44, 0.95);
+          flex-shrink: 0;
         }
 
         .typing-dots {
@@ -1282,8 +1272,8 @@ function ve(e,t){return(t,s,i)=>((e,t,s)=>(s.configurable=!0,s.enumerable=!0,Ref
             ${this.messages.map(e=>this.renderMessage(e))}
           </div>
         `}
-        ${this.renderTypingIndicator()}
       </div>
+      ${this.renderTypingIndicator()}
       ${this.renderInputArea()}
     `}render(){const e=this.accentColor?`\n      --rc-primary: ${this.accentColor};\n      --rc-primary-dark: ${this.accentColor};\n    `:"";return F`
       <style>
@@ -1363,7 +1353,6 @@ function ve(e,t){return(t,s,i)=>((e,t,s)=>(s.configurable=!0,s.enumerable=!0,Ref
           padding: 16px;
           display: flex;
           flex-direction: column;
-          position: relative;
         }
 
         /* Loading state */
@@ -1628,24 +1617,15 @@ function ve(e,t){return(t,s,i)=>((e,t,s)=>(s.configurable=!0,s.enumerable=!0,Ref
 
         /* Typing indicator */
         .typing-indicator {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 8px 12px;
           color: var(--rc-text-secondary);
           font-size: 13px;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(8px);
+          background: var(--rc-bg);
           border-top: 1px solid var(--rc-border);
-          z-index: 10;
-        }
-
-        :host([theme="dark"]) .typing-indicator {
-          background: rgba(26, 32, 44, 0.95);
+          flex-shrink: 0;
         }
 
         .typing-dots {
