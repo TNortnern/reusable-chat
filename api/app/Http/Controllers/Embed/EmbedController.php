@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Embed;
 use App\Http\Controllers\Controller;
 use App\Models\PublicKey;
 use App\Models\ChatUser;
-use App\Models\Session;
+use App\Models\ChatSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -98,7 +98,8 @@ class EmbedController extends Controller
         }
 
         // Create session
-        $session = Session::create([
+        $session = ChatSession::create([
+            'workspace_id' => $workspace->id,
             'chat_user_id' => $chatUser->id,
             'token' => Str::random(64),
             'expires_at' => now()->addDays(30),
