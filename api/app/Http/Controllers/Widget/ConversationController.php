@@ -18,7 +18,16 @@ class ConversationController extends Controller
         // Get type filter from query param (for filtering by metadata.type)
         $typeFilter = $request->query('type');
 
-        $query = Conversation::where('workspace_id', $request->workspace->id)
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+
+        $query = Conversation::where('workspace_id', $workspace->id)
             ->whereHas('participants', function ($query) use ($user) {
                 $query->where('chat_user_id', $user->id);
             });
@@ -65,7 +74,15 @@ class ConversationController extends Controller
             'name' => 'nullable|string|max:255',
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+
         $currentUser = $request->chatUser;
 
         // Add current user to participants
@@ -126,7 +143,16 @@ class ConversationController extends Controller
     {
         $user = $request->chatUser;
 
-        $conversation = Conversation::where('workspace_id', $request->workspace->id)
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+
+        $conversation = Conversation::where('workspace_id', $workspace->id)
             ->where('id', $id)
             ->whereHas('participants', fn($q) => $q->where('chat_user_id', $user->id))
             ->with(['participants'])
@@ -151,7 +177,16 @@ class ConversationController extends Controller
     {
         $user = $request->chatUser;
 
-        $conversation = Conversation::where('workspace_id', $request->workspace->id)
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+
+        $conversation = Conversation::where('workspace_id', $workspace->id)
             ->where('id', $id)
             ->whereHas('participants', fn($q) => $q->where('chat_user_id', $user->id))
             ->firstOrFail();

@@ -20,7 +20,14 @@ class UserController extends Controller
             'is_anonymous' => 'nullable|boolean',
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+        
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
 
         $user = ChatUser::updateOrCreate(
             [
@@ -41,7 +48,16 @@ class UserController extends Controller
 
     public function show(Request $request, string $externalId): JsonResponse
     {
-        $user = ChatUser::where('workspace_id', $request->workspace->id)
+        $workspace = $request->attributes->get('workspace');
+        
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+        
+        $user = ChatUser::where('workspace_id', $workspace->id)
             ->where('external_id', $externalId)
             ->firstOrFail();
 

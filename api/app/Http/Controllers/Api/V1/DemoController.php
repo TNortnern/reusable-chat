@@ -19,7 +19,14 @@ class DemoController extends Controller
             'name' => 'nullable|string|max:255',
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
 
         $conversation = Conversation::create([
             'workspace_id' => $workspace->id,

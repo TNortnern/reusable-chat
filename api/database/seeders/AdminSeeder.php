@@ -10,13 +10,12 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create super admin if not exists
-        $admin = Admin::firstOrCreate(
+        // Create or update super admin
+        $admin = Admin::updateOrCreate(
             ['email' => 'admin@admin.admin'],
             [
                 'name' => 'Super Admin',
-                'email' => 'admin@admin.admin',
-                'password' => Hash::make('Admin123!'),
+                'password' => Hash::make('Admin1234!'),
                 'is_super_admin' => true,
             ]
         );
@@ -24,7 +23,7 @@ class AdminSeeder extends Seeder
         if ($admin->wasRecentlyCreated) {
             $this->command->info('Super admin created: admin@admin.admin');
         } else {
-            $this->command->info('Super admin already exists: admin@admin.admin');
+            $this->command->info('Super admin updated: admin@admin.admin');
         }
     }
 }

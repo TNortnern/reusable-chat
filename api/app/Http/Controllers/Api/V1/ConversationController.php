@@ -19,7 +19,15 @@ class ConversationController extends Controller
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+
         $user = ChatUser::where('workspace_id', $workspace->id)
             ->where('id', $validated['user_id'])
             ->firstOrFail();
@@ -45,7 +53,14 @@ class ConversationController extends Controller
             'metadata' => 'nullable|array', // custom data (e.g., property_id, booking_id)
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
 
         // Validate all participants belong to this workspace
         $users = ChatUser::where('workspace_id', $workspace->id)
@@ -96,7 +111,15 @@ class ConversationController extends Controller
             'user_id' => 'required|uuid',
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+
         $user = ChatUser::where('workspace_id', $workspace->id)
             ->where('id', $validated['user_id'])
             ->firstOrFail();
@@ -139,7 +162,14 @@ class ConversationController extends Controller
             'user_id' => 'required|uuid',
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
 
         $conversation = Conversation::where('workspace_id', $workspace->id)
             ->where('id', $id)

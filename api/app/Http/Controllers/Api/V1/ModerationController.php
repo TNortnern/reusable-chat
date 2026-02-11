@@ -17,7 +17,14 @@ class ModerationController extends Controller
             'expires_at' => 'nullable|date|after:now',
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
 
         $user = ChatUser::where('workspace_id', $workspace->id)
             ->where('id', $id)
@@ -48,7 +55,14 @@ class ModerationController extends Controller
 
     public function unban(Request $request, string $id): JsonResponse
     {
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
 
         $user = ChatUser::where('workspace_id', $workspace->id)
             ->where('id', $id)
@@ -67,7 +81,14 @@ class ModerationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
 
         $bans = Ban::where('workspace_id', $workspace->id)
             ->where(function ($query) {

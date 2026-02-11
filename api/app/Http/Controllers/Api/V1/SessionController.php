@@ -18,7 +18,15 @@ class SessionController extends Controller
             'expires_in' => 'nullable|integer|min:60', // seconds
         ]);
 
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+        
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+        
         $user = ChatUser::where('workspace_id', $workspace->id)
             ->where('id', $validated['user_id'])
             ->firstOrFail();
@@ -41,7 +49,16 @@ class SessionController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $session = ChatSession::where('workspace_id', $request->workspace->id)
+        $workspace = $request->attributes->get('workspace');
+        
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+        
+        $session = ChatSession::where('workspace_id', $workspace->id)
             ->where('id', $id)
             ->firstOrFail();
 

@@ -30,5 +30,8 @@ class DatabaseSeeder extends Seeder
 
         // Run mywatercloset seeder
         $this->call(MywaterclosetSeeder::class);
+
+        // Run watercloset seeder
+        $this->call(WaterclosetSeeder::class);
     }
 }

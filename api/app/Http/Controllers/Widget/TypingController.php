@@ -13,7 +13,15 @@ class TypingController extends Controller
     public function store(Request $request, string $conversationId): JsonResponse
     {
         $user = $request->chatUser;
-        $workspace = $request->workspace;
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace) {
+            return response()->json([
+                'error' => 'Workspace not found in request',
+                'code' => 'workspace_not_in_request'
+            ], 401);
+        }
+
         $isTyping = $request->input('is_typing', true);
 
         $conversation = Conversation::where('workspace_id', $workspace->id)
