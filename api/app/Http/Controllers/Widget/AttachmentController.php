@@ -22,7 +22,7 @@ class AttachmentController extends Controller
             'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,txt',
         ]);
 
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
         $workspace = $request->attributes->get('workspace');
 
         if (!$workspace) {

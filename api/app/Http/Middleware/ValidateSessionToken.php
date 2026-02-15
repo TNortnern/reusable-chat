@@ -30,11 +30,9 @@ class ValidateSessionToken
             return response()->json(['error' => 'Invalid or expired session'], 401);
         }
 
-        $request->merge([
-            'chatSession' => $session,
-            'chatUser' => $session->chatUser,
-            'workspace' => $session->workspace,
-        ]);
+        $request->attributes->set('chatSession', $session);
+        $request->attributes->set('chatUser', $session->chatUser);
+        $request->attributes->set('workspace', $session->workspace);
 
         return $next($request);
     }

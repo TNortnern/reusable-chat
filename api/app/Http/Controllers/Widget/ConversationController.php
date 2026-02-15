@@ -13,7 +13,7 @@ class ConversationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
 
         // Get type filter from query param (for filtering by metadata.type)
         $typeFilter = $request->query('type');
@@ -83,7 +83,7 @@ class ConversationController extends Controller
             ], 401);
         }
 
-        $currentUser = $request->chatUser;
+        $currentUser = $request->attributes->get('chatUser');
 
         // Add current user to participants
         $participantIds = array_unique(array_merge(
@@ -139,9 +139,51 @@ class ConversationController extends Controller
         return response()->json($conversation->load('participants'), 201);
     }
 
+    public function unreadCount(Request $request): JsonResponse
+    {
+        $user = $request->attributes->get('chatUser');
+        $workspace = $request->attributes->get('workspace');
+
+        if (!$workspace || !$user) {
+            return response()->json([
+                'error' => 'Workspace or user not found in request',
+                'code' => 'workspace_or_user_not_in_request',
+            ], 401);
+        }
+
+        $conversations = Conversation::where('workspace_id', $workspace->id)
+            ->whereHas('participants', fn($query) => $query->where('chat_user_id', $user->id))
+            ->with(['participants' => fn($query) => $query->where('chat_user_id', $user->id)])
+            ->get();
+
+        $unreadCount = 0;
+
+        foreach ($conversations as $conversation) {
+            $participant = $conversation->participants->first();
+            $lastReadAt = $participant?->last_read_at;
+
+            if ($lastReadAt) {
+                $unreadCount += $conversation->messages()
+                    ->where('created_at', '>', $lastReadAt)
+                    ->where('sender_id', '!=', $user->id)
+                    ->count();
+            } else {
+                $unreadCount += $conversation->messages()
+                    ->where('sender_id', '!=', $user->id)
+                    ->count();
+            }
+        }
+
+        return response()->json(['unread_count' => $unreadCount]);
+    }
+
     public function show(Request $request, string $id): JsonResponse
     {
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
+
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
 
         $workspace = $request->attributes->get('workspace');
 
@@ -175,7 +217,7 @@ class ConversationController extends Controller
      */
     public function leave(Request $request, string $id): JsonResponse
     {
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
 
         $workspace = $request->attributes->get('workspace');
 

@@ -12,7 +12,7 @@ class BlockController extends Controller
 {
     public function store(Request $request, string $id): JsonResponse
     {
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
         $workspace = $request->attributes->get('workspace');
 
         if (!$workspace) {
@@ -40,7 +40,7 @@ class BlockController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
         $workspace = $request->attributes->get('workspace');
 
         if (!$workspace) {

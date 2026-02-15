@@ -27,7 +27,7 @@ class MessageController extends Controller
             ], 422);
         }
 
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
         $workspace = $request->attributes->get('workspace');
 
         if (!$workspace) {

@@ -19,7 +19,7 @@ class ReactionController extends Controller
             'emoji' => 'required|string|max:8',
         ]);
 
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
         $workspace = $request->attributes->get('workspace');
 
         if (!$workspace) {
@@ -52,7 +52,7 @@ class ReactionController extends Controller
 
     public function destroy(Request $request, string $conversationId, string $messageId, string $emoji): JsonResponse
     {
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
         $workspace = $request->attributes->get('workspace');
 
         if (!$workspace) {

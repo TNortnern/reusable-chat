@@ -10,7 +10,7 @@ class MeController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
         $workspace = $request->attributes->get('workspace');
 
         if (!$workspace) {

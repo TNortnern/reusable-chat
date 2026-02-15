@@ -72,6 +72,7 @@ Route::prefix('widget')->middleware(['session.token', 'throttle:widget'])->group
     Route::post('/broadcasting/auth', [BroadcastAuthController::class, 'authenticate']);
 
     Route::get('/conversations', [WidgetConversationController::class, 'index']);
+    Route::get('/conversations/unread', [WidgetConversationController::class, 'unreadCount']);
     Route::post('/conversations', [WidgetConversationController::class, 'store']);
     Route::get('/conversations/{id}', [WidgetConversationController::class, 'show']);
     Route::delete('/conversations/{id}', [WidgetConversationController::class, 'leave']);

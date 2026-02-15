@@ -22,7 +22,7 @@ class ReportController extends Controller
             'description' => 'nullable|string|max:1000',
         ]);
 
-        $user = $request->chatUser;
+        $user = $request->attributes->get('chatUser');
         $workspace = $request->attributes->get('workspace');
 
         if (!$workspace) {
